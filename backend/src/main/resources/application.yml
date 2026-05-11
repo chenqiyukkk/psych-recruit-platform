@@ -19,7 +19,7 @@ spring:
 app:
   jwt:
     # 需要至少 32 字符，HS256 才安全且可用
-    secret: "please-change-this-jwt-secret-to-32-chars-minimum"
+    secret: ${APP_JWT_SECRET:please-change-this-jwt-secret-to-32-chars-minimum}
     expiration-ms: 86400000
 
 springdoc:
@@ -27,4 +27,3 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
-
