@@ -43,7 +43,6 @@ public class UserService {
     user.setTotalReviews(0);
     LocalDateTime now = LocalDateTime.now();
     user.setCreatedAt(now);
-    user.setUpdatedAt(now);
     userRepository.save(user);
   }
 
@@ -75,7 +74,6 @@ public class UserService {
             .orElseThrow(() -> new ApiException(404, "用户不存在"));
     user.setPhone(request.getPhone());
     user.setEmail(request.getEmail());
-    user.setUpdatedAt(LocalDateTime.now());
     return toProfile(userRepository.save(user));
   }
 
@@ -102,4 +100,3 @@ public class UserService {
         user.getTotalReviews());
   }
 }
-

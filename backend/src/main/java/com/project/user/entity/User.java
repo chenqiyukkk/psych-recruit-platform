@@ -47,8 +47,4 @@ public class User {
 
   @Column(nullable = false)
   private LocalDateTime createdAt;
-
-  @Column(nullable = false)
-  private LocalDateTime updatedAt;
 }
-
