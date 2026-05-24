@@ -279,4 +279,48 @@ CREATE TABLE reputation_logs (
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='信誉分记录';
 
+-- =========================
+-- 12) notifications 系统通知
+-- =========================
+DROP TABLE IF EXISTS notifications;
+CREATE TABLE notifications (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  user_id BIGINT UNSIGNED NOT NULL COMMENT '接收用户ID',
+  title VARCHAR(100) NOT NULL COMMENT '通知标题',
+  content TEXT NOT NULL COMMENT '通知内容',
+  type VARCHAR(50) NOT NULL COMMENT '通知类型（REGISTRATION_APPROVED/REGISTRATION_REJECTED/PAYMENT_CONFIRMED/EXPERIMENT_STARTED/REVIEW_RECEIVED/APPEAL_PROCESSED）',
+  related_type VARCHAR(50) DEFAULT NULL COMMENT '关联业务类型（experiment/registration/payment/review/appeal）',
+  related_id BIGINT UNSIGNED DEFAULT NULL COMMENT '关联业务记录ID',
+  is_read TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否已读（0未读/1已读）',
+  read_at DATETIME DEFAULT NULL COMMENT '阅读时间',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (id),
+  KEY idx_notifications_user_id (user_id),
+  KEY idx_notifications_type (type),
+  KEY idx_notifications_is_read (is_read),
+  KEY idx_notifications_created_at (created_at),
+  CONSTRAINT fk_notifications_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统通知表';
+
+-- =========================
+-- 13) configs 系统配置
+-- =========================
+DROP TABLE IF EXISTS configs;
+CREATE TABLE configs (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
+  config_key VARCHAR(100) NOT NULL COMMENT '配置键（唯一）',
+  config_value JSON NOT NULL COMMENT '配置值（JSON）',
+  description VARCHAR(255) DEFAULT NULL COMMENT '配置说明',
+  category VARCHAR(50) DEFAULT NULL COMMENT '配置分类（EXPERIMENT/LOCATION/TAG/SYSTEM）',
+  is_enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用（0禁用/1启用）',
+  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (id),
+  UNIQUE KEY uk_configs_key (config_key),
+  KEY idx_configs_category (category),
+  KEY idx_configs_is_enabled (is_enabled)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统配置表';
+
 SET FOREIGN_KEY_CHECKS = 1;

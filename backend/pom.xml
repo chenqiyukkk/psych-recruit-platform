@@ -18,7 +18,8 @@
   <description>Psych recruit platform backend</description>
 
   <properties>
-    <java.version>11</java.version>
+    <java.version>17</java.version>
+    <lombok.version>1.18.46</lombok.version>
     <jjwt.version>0.11.5</jjwt.version>
     <springdoc.version>1.7.0</springdoc.version>
   </properties>
@@ -44,6 +45,7 @@
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
+      <version>8.0.33</version>
       <scope>runtime</scope>
     </dependency>
 
@@ -74,12 +76,18 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
+      <version>${lombok.version}</version>
       <optional>true</optional>
     </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.security</groupId>
+      <artifactId>spring-security-test</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -98,6 +106,13 @@
           <target>${java.version}</target>
           <encoding>UTF-8</encoding>
           <parameters>true</parameters>
+          <annotationProcessorPaths>
+            <path>
+              <groupId>org.projectlombok</groupId>
+              <artifactId>lombok</artifactId>
+              <version>${lombok.version}</version>
+            </path>
+          </annotationProcessorPaths>
         </configuration>
       </plugin>
     </plugins>
