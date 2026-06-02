@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:psych_recruit_platform_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: false
+  sql:
+    init:
+      mode: never
+
+app:
+  jwt:
+    secret: test-jwt-secret-test-jwt-secret-test-jwt-secret
+    expiration-ms: 86400000

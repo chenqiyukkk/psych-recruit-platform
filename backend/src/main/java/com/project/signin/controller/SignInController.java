@@ -4,6 +4,8 @@ package com.project.signin.controller;
 import com.project.common.api.Result;
 import com.project.registration.dto.RegistrationResponse;
 import com.project.signin.service.SignInService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -15,12 +17,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/sign-ins")
 @RequiredArgsConstructor
+@Tag(name = "签到模块", description = "实验现场签到和实验完成确认")
 public class SignInController {
 
     private final SignInService signInService;
 
     @PostMapping("/registrations/{registrationId}")
     @PreAuthorize("hasAnyRole('研究者','管理员')")
+    @Operation(summary = "报名签到", description = "研究者或管理员为已通过审核的报名记录进行现场签到")
     public Result<RegistrationResponse> signIn(
             Authentication authentication,
             @PathVariable("registrationId") Long registrationId){
@@ -29,6 +33,7 @@ public class SignInController {
 
     @PostMapping("/registrations/{registrationId}/complete")
     @PreAuthorize("hasAnyRole('研究者','管理员')")
+    @Operation(summary = "确认实验完成", description = "研究者或管理员将已签到的报名记录标记为实验完成")
     public Result<RegistrationResponse> complete(
             Authentication authentication,
             @PathVariable("registrationId") Long registrationId){
