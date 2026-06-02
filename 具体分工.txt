@@ -1,0 +1,2974 @@
+好的！基于所有更新（线下支付、双向评价、申诉机制），我为你重新整理**五人完整详细分工**，每个人都可以直接拿着跟AI对话生成代码。
+
+---
+
+# 👥 心理学被试招募平台 - 五人完整详细分工（最终版）
+
+---
+
+## 👤 成员1：组长 + 后端核心架构 + 数据库设计
+
+### 🎯 核心职责
+负责系统地基、所有数据库表设计、用户与实验核心模块、支付相关模块、架构与运维文档。
+
+---
+
+### 1️⃣ **数据库设计（最先完成，提供给全员）**
+
+**任务**：设计完整数据库脚本，包含所有新增表。
+
+**AI 提问模板**：
+```
+帮我设计一个心理学被试招募平台的完整 MySQL 数据库脚本。需要包含以下表：
+
+1. users 表（用户表）
+   - id, username, password, phone, email, role (被试/研究者/管理员)
+   - reputation_score (信誉分，默认100)
+   - researcher_rating (研究者平均评分)
+   - total_reviews (被评价次数)
+   - created_at
+
+2. participant_profiles 表（被试档案）
+   - id, user_id, anonymous_id (P-2025-001格式)
+   - age_group, gender, major_category, handedness
+   - created_at
+
+3. experiments 表（实验项目）
+   - id, title, description, location
+   - start_time, end_time
+   - ethics_approval_no (伦理审批编号)
+   - risk_level (low/medium/high)
+   - payment_amount (报酬金额)
+   - payment_method (OFFLINE/ONLINE)
+   - payment_description (报酬说明)
+   - screening_criteria (JSON格式筛选条件)
+   - exclude_tags (JSON格式互斥标签)
+   - status (DRAFT/PUBLISHED/RECRUITING/FULL/ONGOING/COMPLETED)
+   - organizer_id (研究者ID)
+   - created_at, updated_at
+
+4. experiment_tags 表（实验标签）
+   - id, experiment_id, tag_name, cooling_days
+
+5. registrations 表（报名记录）
+   - id, experiment_id, user_id
+   - status (PENDING/APPROVED/REJECTED/CANCELLED)
+   - applied_at, reviewed_at
+   - sign_in_time, is_completed
+   - created_at, updated_at
+
+6. consent_records 表（知情同意书）
+   - id, registration_id
+   - consent_version, signed_at
+   - ip_address, device_fingerprint
+   - is_verified
+
+7. payment_codes 表（收款码）
+   - id, user_id
+   - payment_type (WECHAT/ALIPAY)
+   - qr_code_url, is_default
+   - created_at
+
+8. payment_records 表（支付记录）
+   - id, registration_id
+   - payer_user_id (研究者), payee_user_id (被试)
+   - amount, payment_screenshot_url
+   - payer_confirmed_at, payee_confirmed_at
+   - status (PENDING/PAID/CONFIRMED/DISPUTED)
+   - created_at
+
+9. reviews 表（评价记录）
+   - id, registration_id
+   - reviewer_id, reviewed_id
+   - review_type (SUBJECT_TO_RESEARCHER/RESEARCHER_TO_SUBJECT)
+   - rating (1-5)
+   - communication_score, professionalism_score, punctuality_score
+   - comment, is_anonymous
+   - created_at
+
+10. appeals 表（申诉记录）
+    - id, appellant_id
+    - appeal_type (REPUTATION_DEDUCTION/LOW_RATING/PAYMENT_DISPUTE)
+    - target_id (关联记录ID)
+    - reason, evidence_urls (JSON)
+    - status (PENDING/UNDER_REVIEW/APPROVED/REJECTED)
+    - reviewer_id, review_comment, reviewed_at
+    - created_at
+
+11. reputation_logs 表（信誉分记录）
+    - id, user_id
+    - change_type, score_delta, reason
+    - created_at
+
+要求：
+- 使用 InnoDB 引擎，utf8mb4 字符集
+- 包含所有外键约束和索引
+- SQL 格式规范，带注释
+```
+
+---
+
+### 2️⃣ **后端核心模块开发**
+
+**A. 用户认证模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 2.7 实现用户登录注册模块。
+
+需要包含：
+1. UserController 控制器，提供以下接口：
+   - POST /api/auth/register (注册，包含角色选择)
+   - POST /api/auth/login (登录，返回 JWT token)
+   - POST /api/auth/logout (登出)
+   - GET /api/users/profile (获取个人信息)
+   - PUT /api/users/profile (更新个人信息)
+   - GET /api/users/{id}/rating (获取研究者评分)
+
+2. UserService 服务层：
+   - 密码 BCrypt 加密
+   - JWT token 生成与验证
+   - 信誉分查询
+   - 研究者评分计算
+
+3. UserRepository 数据访问层
+
+4. JWT 工具类：
+   - generateToken(username, role)
+   - parseToken(token)
+   - validateToken(token)
+
+5. 统一返回结果类 Result<T>
+   - code, message, data, timestamp
+   - success(), error() 静态方法
+
+6. 全局异常处理器 GlobalExceptionHandler
+
+要求：代码规范，包含注释，使用 Lombok 简化代码
+```
+
+**B. 实验核心模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现实验项目管理模块。
+
+需要包含：
+1. ExperimentController 控制器，提供以下接口：
+   - POST /api/experiments (创建实验)
+   - PUT /api/experiments/{id} (更新实验)
+   - DELETE /api/experiments/{id} (删除实验)
+   - GET /api/experiments/{id} (获取实验详情)
+   - GET /api/experiments (分页查询，支持筛选)
+   - POST /api/experiments/{id}/publish (发布实验)
+   - POST /api/experiments/{id}/cancel (取消实验)
+
+2. ExperimentService 服务层：
+   - 实验 CRUD 操作
+   - 状态流转控制
+   - 筛选条件解析与匹配
+   - 互斥标签校验
+
+3. ExperimentRepository 数据访问层
+
+4. 实体类：
+   - Experiment (包含所有字段)
+   - ExperimentTag
+   - ScreeningCriteria (JSON解析类)
+
+要求：包含完整的业务逻辑校验，使用 @Transactional 保证数据一致性
+```
+
+**C. 支付相关模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现支付确认模块（线下支付）。
+
+需要包含：
+1. PaymentController 控制器，提供以下接口：
+   - POST /api/payment/codes (上传收款码)
+   - GET /api/payment/codes/my (获取我的收款码)
+   - GET /api/payment/records/{registrationId} (获取支付记录)
+   - POST /api/payment/records/confirm-payer (研究者确认支付)
+   - POST /api/payment/records/confirm-payee (被试确认收款)
+   - POST /api/payment/records/dispute (发起支付争议)
+
+2. PaymentService 服务层：
+   - 收款码上传与管理
+   - 支付记录创建
+   - 双方确认流程
+   - 争议状态处理
+
+3. PaymentRepository 数据访问层
+
+4. 实体类：
+   - PaymentCode
+   - PaymentRecord
+
+要求：支付状态流转：PENDING → PAID → CONFIRMED/DISPUTED
+```
+
+---
+
+### 3️⃣ **架构与运维文档**
+
+**AI 提问模板**：
+```
+帮我写一份软件架构设计文档，基于 Spring Boot + Vue3 + 微信小程序架构。
+
+需要包含：
+1. 系统整体架构图（分层架构）
+2. 技术选型及理由：
+   - 后端：Spring Boot 2.7
+   - 前端：Vue3 + Element Plus
+   - 小程序：微信原生
+   - 数据库：MySQL 8.0
+   - 缓存：Redis
+
+3. 关键设计决策：
+   - 被试匿名化设计
+   - 线下支付流程设计
+   - 双向评价机制设计
+   - 申诉处理流程设计
+
+4. 安全性设计：
+   - JWT 认证
+   - 密码加密
+   - 敏感信息脱敏
+   - HTTPS 传输
+
+5. 隐私保护设计：
+   - 被试档案匿名化
+   - 知情同意书签署记录
+   - 数据访问权限控制
+
+要求：文档结构清晰，包含图表说明
+```
+
+**AI 提问模板（运维文档）**：
+```
+帮我写一份软件配置与运维文档。
+
+需要包含：
+1. 开发环境配置：
+   - JDK 11 安装
+   - Maven 配置
+   - MySQL 安装与配置
+   - Redis 安装
+
+2. 部署方案：
+   - Docker 容器化部署
+   - docker-compose.yml 配置
+   - Nginx 反向代理配置
+
+3. 配置文件说明：
+   - application.yml 各项配置
+   - 数据库连接配置
+   - JWT 密钥配置
+   - 文件上传路径配置
+
+4. 运维计划：
+   - 日志管理
+   - 数据库备份策略
+   - 监控方案
+   - 故障处理流程
+
+要求：包含具体的配置示例和命令
+```
+
+---
+
+### 📦 成员1交付文件清单
+
+| 类型 | 文件路径/名称 | 说明 |
+|------|--------------|------|
+| **代码** | `src/main/java/com/project/user/` | 用户模块完整代码 |
+| **代码** | `src/main/java/com/project/experiment/` | 实验核心模块代码 |
+| **代码** | `src/main/java/com/project/payment/` | 支付相关模块代码 |
+| **代码** | `src/main/java/com/project/common/` | 通用工具类 (JWT/Result/异常) |
+| **代码** | `schema.sql` | 完整数据库建表脚本 (11张表) |
+| **代码** | `application.yml` | 应用配置文件 |
+| **代码** | `pom.xml` | Maven 依赖配置 |
+| **代码** | `Dockerfile` + `docker-compose.yml` | Docker 部署配置 |
+| **文档** | `组长学号-姓名-架构设计文档.pdf` | 主笔 |
+| **文档** | `组长学号-姓名-软件配置与运维文档.pdf` | 主笔 |
+
+---
+
+## 👤 成员2：后端业务开发 + 工程化负责人
+
+### 🎯 核心职责
+负责报名/签到/统计模块、评价模块、信誉分系统、CI/CD工程化、工程化文档。
+
+---
+
+### 1️⃣ **后端业务模块开发**
+
+**A. 报名模块（含资格校验）**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现被试报名模块，包含复杂的资格校验逻辑。
+
+需要包含：
+1. RegistrationController 控制器，提供以下接口：
+   - POST /api/registrations (报名实验)
+   - DELETE /api/registrations/{id} (取消报名)
+   - GET /api/registrations/my (我的报名列表)
+   - GET /api/registrations/experiment/{id} (实验报名列表 - 研究者视角)
+   - POST /api/registrations/{id}/approve (审核通过)
+   - POST /api/registrations/{id}/reject (审核拒绝)
+
+2. RegistrationService 服务层，包含核心校验逻辑：
+   - 校验1：年龄是否符合实验要求
+   - 校验2：性别是否符合实验要求
+   - 校验3：信誉分是否 >= 60
+   - 校验4：30天内是否参加过同类实验（互斥规则）
+   - 校验5：是否重复报名
+   - 校验6：实验是否已满员
+   
+3. RegistrationRepository 数据访问层
+
+4. 实体类：
+   - Registration
+   - ConsentRecord
+
+5. 资格校验服务 QualificationCheckService：
+   - checkAge(profile, criteria)
+   - checkGender(profile, criteria)
+   - checkReputation(userId)
+   - checkConflictTags(userId, experimentTags)
+   - 返回详细的校验结果和失败原因
+
+要求：
+- 使用 @Transactional 保证数据一致性
+- 校验失败时返回具体原因（如"年龄不符合要求"）
+- 报名成功后自动创建 ConsentRecord（待签署状态）
+```
+
+**B. 知情同意书签署模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现知情同意书签署模块。
+
+需要包含：
+1. ConsentController 控制器，提供以下接口：
+   - GET /api/consent/{registrationId} (获取知情同意书内容)
+   - POST /api/consent/sign (签署知情同意书)
+   - GET /api/consent/records/{userId} (获取我的签署记录)
+
+2. ConsentService 服务层：
+   - 获取同意书模板
+   - 记录签署信息（时间/IP/设备指纹）
+   - 验证签署完整性
+   - 版本管理
+
+3. 签署流程：
+   - 被试阅读同意书
+   - 勾选"我已理解风险"
+   - 提交签署
+   - 系统记录签署信息
+   - 更新报名状态
+
+要求：签署记录不可篡改，包含完整审计日志
+```
+
+**C. 签到模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现实验签到模块。
+
+需要包含：
+1. SignInController 控制器，提供以下接口：
+   - POST /api/signin/qr (扫码签到)
+   - POST /api/signin/gps (GPS定位签到)
+   - POST /api/signin/manual (管理员手动签到)
+   - GET /api/signin/records/{experimentId} (获取签到记录)
+   - POST /api/signin/complete (标记实验完成)
+
+2. SignInService 服务层：
+   - 二维码生成与验证
+   - GPS定位校验
+   - 签到时间范围校验
+   - 实验完成标记
+   - 触发支付流程
+
+3. 签到流程：
+   - 研究者生成签到二维码
+   - 被试扫码签到
+   - 系统记录签到时间
+   - 实验结束后标记完成
+   - 自动创建支付记录
+
+要求：防止重复签到，记录签到位置信息
+```
+
+**D. 评价模块（双向评价）**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现双向评价模块。
+
+需要包含：
+1. ReviewController 控制器，提供以下接口：
+   - POST /api/reviews (提交评价)
+   - GET /api/reviews/experiment/{id} (获取实验评价列表)
+   - GET /api/reviews/user/{id} (获取用户收到的评价)
+   - PUT /api/reviews/{id} (修改评价)
+   - POST /api/reviews/{id}/appeal (对评价发起申诉)
+
+2. ReviewService 服务层：
+   - 提交评价（被试评研究者/研究者评被试）
+   - 计算平均评分
+   - 更新研究者 rating 字段
+   - 更新被试信誉分（基于评价）
+   - 防止重复评价（每实验仅能评价1次）
+
+3. 评价维度：
+   - 总评分 (1-5星)
+   - 沟通态度评分
+   - 专业性评分
+   - 准时性评分
+
+4. 评价触发时机：
+   - 支付确认完成后
+   - 双方均可评价
+   - 评价后可见对方评价
+
+要求：
+- 支持匿名评价（保护被试）
+- 评价内容敏感词过滤
+- 评分计算实时更新
+```
+
+**E. 信誉分系统**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现信誉分管理系统。
+
+需要包含：
+1. ReputationController 控制器，提供以下接口：
+   - GET /api/reputation/score (获取当前信誉分)
+   - GET /api/reputation/logs (获取信誉分变动记录)
+   - POST /api/reputation/deduct (扣分 - 管理员/系统)
+   - POST /api/reputation/add (加分 - 系统)
+
+2. ReputationService 服务层：
+   - 初始分设置（100分）
+   - 加分规则：
+     * 按时完成实验：+2分
+     * 填写反馈问卷：+1分
+   - 扣分规则：
+     * 报名未到场（爽约）：-20分
+     * 实验中途无故退出：-10分
+     * 提供虚假信息：-50分 + 冻结账号
+   - 信誉分查询
+   - 低分限制报名（<60分不能报名热门实验）
+
+3. ReputationLog 实体类：
+   - 记录每次变动
+   - 变动类型（加分/扣分）
+   - 变动原因
+   - 关联操作记录
+
+要求：
+- 所有变动必须记录日志
+- 信誉分不可为负数（最低0分）
+- 提供信誉分恢复机制（申诉成功）
+```
+
+**F. 统计与导出模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现统计与数据导出模块。
+
+需要包含：
+1. StatisticsController 控制器，提供以下接口：
+   - GET /api/statistics/experiment/{id} (实验招募统计)
+   - GET /api/statistics/user/{id} (用户参与统计)
+   - GET /api/statistics/export/excel (导出Excel报表)
+
+2. StatisticsService 服务层：
+   - 实验招募进度统计（已报名/已通过/已完成/爽约人数）
+   - 筛选漏斗分析（浏览→报名→审核→签到→完成）
+   - 用户参与统计（参与实验数、总报酬、平均评分）
+
+3. Excel导出功能：
+   - 使用 Apache POI
+   - 导出被试名单（匿名化处理）
+   - 包含字段：匿名ID、报名时间、签到状态、报酬金额
+   - 支持批量导出
+
+要求：导出数据必须脱敏，保护被试隐私
+```
+
+---
+
+### 2️⃣ **工程化实践**
+
+**A. Git仓库与分支管理**
+
+**AI 提问模板**：
+```
+帮我设计一个 Git 分支管理策略和代码规范。
+
+需要包含：
+1. 分支命名规范：
+   - main（生产环境）
+   - develop（开发环境）
+   - feature/xxx（功能分支）
+   - bugfix/xxx（修复分支）
+   - hotfix/xxx（紧急修复）
+
+2. 提交信息规范（Conventional Commits）：
+   - feat: 新功能
+   - fix: 修复bug
+   - docs: 文档更新
+   - style: 代码格式
+   - refactor: 重构
+   - test: 测试相关
+   - chore: 构建/工具
+
+3. 代码审查流程：
+   - Pull Request 模板
+   - 至少1人审核
+   - CI检查通过才能合并
+
+4. Git 操作示例命令
+
+要求：适合5人团队协作
+```
+
+**B. CI/CD 配置**
+
+**AI 提问模板**：
+```
+帮我配置 GitHub Actions CI/CD 流水线。
+
+需要包含：
+1. .github/workflows/ci.yml 文件：
+   - 触发条件：push到develop/main分支
+   - 任务1：Checkout代码
+   - 任务2：设置JDK 11
+   - 任务3：缓存Maven依赖
+   - 任务4：运行单元测试（mvn test）
+   - 任务5：代码质量扫描（SonarQube）
+   - 任务6：打包（mvn package）
+   - 任务7：上传jar包到Artifacts
+
+2. 配置 SonarQube：
+   - 在 pom.xml 添加 sonar-maven-plugin
+   - 配置 jacoco 代码覆盖率
+   - 质量阈值：覆盖率>60%，重复率<5%
+
+3. 配置通知：
+   - 构建失败发送邮件通知
+
+要求：自动化程度高，减少人工干预
+```
+
+**C. 接口文档（Swagger/Knife4j）**
+
+**AI 提问模板**：
+```
+帮我在 Spring Boot 项目中集成 Knife4j（Swagger增强）。
+
+需要包含：
+1. 添加依赖（pom.xml）：
+   - knife4j-spring-boot-starter
+   
+2. SwaggerConfig 配置类：
+   - 配置 Docket Bean
+   - 配置 API 信息（标题、版本、描述）
+   - 配置 JWT token 认证
+   - 配置全局参数（Authorization header）
+
+3. Controller 注解示例：
+   - @Api(tags = "xxx")
+   - @ApiOperation(value = "xxx", notes = "xxx")
+   - @ApiImplicitParams / @ApiImplicitParam
+   - @ApiResponses / @ApiResponse
+
+4. 访问地址：
+   - http://localhost:8080/doc.html
+
+要求：所有接口必须有完整文档，包含请求参数、响应示例
+```
+
+---
+
+### 3️⃣ **单元测试**
+
+**AI 提问模板**：
+```
+帮我用 JUnit 5 + Mockito 编写单元测试。
+
+需要测试的核心业务：
+1. RegistrationServiceTest：
+   - testCreateRegistration_Success（正常报名）
+   - testCreateRegistration_AgeNotMatch（年龄不符）
+   - testCreateRegistration_ReputationLow（信誉分不足）
+   - testCreateRegistration_TagConflict（互斥冲突）
+   - testCreateRegistration_Duplicate（重复报名）
+
+2. ReviewServiceTest：
+   - testSubmitReview_Success（提交评价成功）
+   - testSubmitReview_Duplicate（重复评价）
+   - testCalculateAverageRating（计算平均评分）
+
+3. ReputationServiceTest：
+   - testAddPoints（加分）
+   - testDeductPoints（扣分）
+   - testReputationCannotBeNegative（信誉分不为负）
+
+要求：
+- 使用 @SpringBootTest 注解
+- 使用 @Transactional 回滚测试数据
+- 使用 MockMvc 测试 Controller
+- 使用 Mockito 模拟 Service
+- 测试覆盖率 > 60%
+```
+
+---
+
+### 📦 成员2交付文件清单
+
+| 类型 | 文件路径/名称 | 说明 |
+|------|--------------|------|
+| **代码** | `src/main/java/com/project/registration/` | 报名模块完整代码 |
+| **代码** | `src/main/java/com/project/consent/` | 知情同意模块代码 |
+| **代码** | `src/main/java/com/project/signin/` | 签到模块代码 |
+| **代码** | `src/main/java/com/project/review/` | 评价模块代码 |
+| **代码** | `src/main/java/com/project/reputation/` | 信誉分模块代码 |
+| **代码** | `src/main/java/com/project/statistics/` | 统计导出模块代码 |
+| **代码** | `src/test/java/com/project/` | 单元测试代码 |
+| **代码** | `.github/workflows/ci.yml` | CI/CD 配置 |
+| **代码** | `pom.xml` (含 SonarQube/Jacoco 配置) | Maven 配置 |
+| **文档** | `组长学号-姓名-软件工程化说明文档.pdf` | 主笔（附 CI/CD 截图、Swagger 截图） |
+| **文档** | `tests/postman/API接口测试集合.json` | Postman 测试文件 |
+
+---
+
+## 👤 成员3：Web前端开发 + 系统建模
+
+### 🎯 核心职责
+负责 Web 管理后台开发（含支付/评价/申诉页面）、所有 UML 建模图、建模文档。
+
+---
+
+### 1️⃣ **Web前端开发（Vue3 + Element Plus）**
+
+**项目初始化**
+
+**AI 提问模板**：
+```
+帮我用 Vite 创建一个 Vue3 项目。
+
+需要包含：
+1. 安装依赖：
+   - vue3
+   - vue-router
+   - pinia（状态管理）
+   - element-plus（UI组件库）
+   - axios（HTTP请求）
+   - @element-plus/icons-vue（图标）
+
+2. 项目结构：
+   - src/views/（页面组件）
+   - src/components/（公共组件）
+   - src/router/（路由配置）
+   - src/store/（Pinia store）
+   - src/api/（接口封装）
+   - src/utils/（工具函数）
+   - src/assets/（静态资源）
+
+3. 配置：
+   - vue.config.js（Vite配置）
+   - router/index.js（路由懒加载）
+   - store/index.js（Pinia store）
+   - utils/request.js（axios封装，含请求/响应拦截器）
+
+4. 代码规范：
+   - ESLint + Prettier
+   - .editorconfig
+
+要求：项目结构清晰，配置完整
+```
+
+**A. 登录页面**
+
+**AI 提问模板**：
+```
+用 Vue3 + Element Plus 写一个登录页面。
+
+需要包含：
+1. 页面布局：
+   - 居中卡片式布局
+   - 渐变背景
+   - 系统标题和Logo
+
+2. 表单元素：
+   - 用户名输入框（带图标）
+   - 密码输入框（带图标，可显示/隐藏）
+   - 角色选择（被试/研究者/管理员）
+   - 登录按钮
+   - 注册链接
+
+3. 功能实现：
+   - 表单验证（必填项）
+   - 调用 POST /api/auth/login 接口
+   - 登录成功后存储 token 到 localStorage
+   - 存储用户信息到 Pinia store
+   - 根据角色跳转到不同首页
+   - 登录失败显示错误提示
+
+4. 样式：
+   - 响应式布局
+   - 美观的动画效果
+
+要求：使用 Composition API（<script setup>）
+```
+
+**B. 实验管理页面（研究者）**
+
+**AI 提问模板**：
+```
+用 Vue3 + Element Plus 写一个实验管理页面。
+
+需要包含：
+1. 搜索栏：
+   - 实验标题搜索框
+   - 状态下拉选择（DRAFT/PUBLISHED/RECRUITING/FULL/ONGOING/COMPLETED）
+   - 时间范围选择器
+   - 搜索按钮
+   - "创建实验"按钮
+
+2. 实验列表表格：
+   - 列：ID、标题、地点、开始时间、状态、已报名/最大人数、报酬
+   - 状态用 el-tag 显示（不同颜色）
+   - 操作列按钮：编辑、发布、审核报名、签到管理、删除
+
+3. 分页组件
+
+4. 功能实现：
+   - 调用 GET /api/experiments 获取列表
+   - 搜索功能
+   - 分页功能
+   - 发布实验调用 POST /api/experiments/{id}/publish
+   - 删除实验确认对话框
+
+要求：使用 Composition API，表格支持排序和筛选
+```
+
+**C. 实验创建/编辑表单页面**
+
+**AI 提问模板**：
+```
+用 Vue3 + Element Plus 写一个实验配置表单（重点页面）。
+
+需要包含：
+1. 基础信息标签页：
+   - 实验标题（输入框）
+   - 实验描述（文本域）
+   - 实验地点（输入框）
+   - 开始时间（日期时间选择器）
+   - 结束时间（日期时间选择器）
+   - 最大人数（数字输入框）
+
+2. 伦理信息标签页：
+   - 伦理审批编号（输入框）
+   - 风险等级（单选：低/中/高）
+   - 知情同意书上传（文件上传）
+   - 风险说明（文本域）
+
+3. 筛选条件标签页（重点）：
+   - 年龄范围（数字范围输入）
+   - 性别（单选：不限/男/女）
+   - 专业类别（多选框）
+   - 利手（单选：不限/左/右/混合）
+   - 排除条件（多选：精神疾病史/近期服药等）
+   - 动态添加自定义条件
+
+4. 互斥规则标签页：
+   - 实验标签选择（多选：fMRI/情绪类/认知类等）
+   - 冷却天数设置（数字输入，默认30天）
+
+5. 报酬信息标签页：
+   - 报酬金额（数字输入）
+   - 支付方式（单选：线下支付）
+   - 报酬说明（文本域，如"实验结束后现场支付"）
+
+6. 功能实现：
+   - 表单验证（必填项）
+   - 提交时组装为 JSON 发送给后端
+   - 创建调用 POST /api/experiments
+   - 编辑调用 PUT /api/experiments/{id}
+   - 保存草稿/发布实验按钮
+
+要求：使用步骤条（el-steps）或标签页（el-tabs）组织表单，界面友好
+```
+
+**D. 报名审核页面**
+
+**AI 提问模板**：
+```
+用 Vue3 + Element Plus 写一个报名审核页面。
+
+需要包含：
+1. 页面头部：
+   - 实验标题显示
+   - 返回按钮
+
+2. 报名列表表格：
+   - 列：匿名ID、年龄段、性别、专业、报名时间、状态
+   - 点击匿名ID可查看完整档案（脱敏信息）
+   - 状态：待审核/已通过/已拒绝
+   - 操作列：查看详情、审核通过、审核拒绝
+
+3. 审核对话框：
+   - 显示被试档案信息
+   - 显示筛选条件匹配结果（✅/❌）
+   - 审核通过按钮
+   - 审核拒绝按钮（需填写拒绝原因）
+
+4. 功能实现：
+   - 调用 GET /api/registrations/experiment/{id}
+   - 审核通过调用 POST /api/registrations/{id}/approve
+   - 审核拒绝调用 POST /api/registrations/{id}/reject
+   - 发送通知给被试
+
+要求：研究者仅能看到脱敏信息，联系方式审核后可见
+```
+
+**E. 支付确认页面（新增）**
+
+**AI 提问模板**：
+```
+用 Vue3 + Element Plus 写一个支付确认管理页面（研究者视角）。
+
+需要包含：
+1. 支付列表表格：
+   - 列：匿名ID、实验标题、报酬金额、支付状态、研究者确认时间、被试确认时间
+   - 状态：待支付/已支付/已确认/争议中
+   - 操作列：标记已支付、上传截图、查看争议
+
+2. 标记支付对话框：
+   - 上传支付截图（图片上传）
+   - 确认支付按钮
+   - 调用 POST /api/payment/records/confirm-payer
+
+3. 争议处理对话框：
+   - 显示争议原因
+   - 显示被试上传的证据
+   - 管理员审核意见输入框
+   - 处理按钮（通过/拒绝）
+
+4. 功能实现：
+   - 调用 GET /api/payment/records 获取列表
+   - 筛选状态
+   - 实时刷新状态
+
+要求：界面清晰，操作流程简单
+```
+
+**F. 评价管理页面（新增）**
+
+**AI 提问模板**：
+```
+用 Vue3 + Element Plus 写一个评价查看页面。
+
+需要包含：
+1. 评价列表：
+   - 显示收到的所有评价
+   - 卡片式布局
+   - 每项显示：评分（星级）、评价维度、文字评价、时间
+
+2. 统计信息：
+   - 平均评分
+   - 总评价数
+   - 评分分布（柱状图）
+
+3. 申诉功能：
+   - 对低评分可点击"申诉"
+   - 弹出申诉表单
+   - 填写申诉理由
+   - 上传证据（截图等）
+   - 调用 POST /api/reviews/{id}/appeal
+
+要求：界面美观，支持筛选和排序
+```
+
+**G. 签到管理页面**
+
+**AI 提问模板**：
+```
+用 Vue3 + Element Plus 写一个签到管理页面。
+
+需要包含：
+1. 签到二维码显示：
+   - 使用 qrcode.vue 组件生成二维码
+   - 二维码内容：实验ID + 签到token
+   - 刷新按钮（防止二维码被滥用）
+
+2. 签到统计卡片：
+   - 应到人数
+   - 已签到人数
+   - 签到率
+   - 未签到名单
+
+3. 签到记录表格：
+   - 列：匿名ID、签到时间、签到方式（扫码/GPS/手动）
+   - 支持导出Excel
+
+4. 手动签到功能：
+   - 输入被试匿名ID或手机号
+   - 点击"手动签到"按钮
+
+5. 标记实验完成：
+   - 所有被试签到后
+   - 点击"标记实验完成"按钮
+   - 触发支付流程
+
+要求：实时刷新签到状态
+```
+
+---
+
+### 2️⃣ **系统建模（UML图）**
+
+**A. 用例图**
+
+**AI 提问模板**：
+```
+帮我生成一个心理学被试招募平台的用例图 PlantUML 代码。
+
+需要包含：
+1. 三个角色：
+   - 被试 (Subject) - 蓝色
+   - 研究者 (Researcher) - 绿色
+   - 管理员 (Admin) - 黄色
+
+2. 被试用例：
+   - 浏览实验列表
+   - 查看实验详情
+   - 资格自检
+   - 报名实验
+   - 签署知情同意书
+   - 上传收款码
+   - 确认收款
+   - 扫码签到
+   - 评价研究者
+   - 发起申诉
+
+3. 研究者用例：
+   - 发布实验
+   - 配置筛选条件
+   - 配置互斥规则
+   - 审核报名申请
+   - 标记已支付
+   - 查看签到情况
+   - 标记实验完成
+   - 评价被试
+   - 导出被试名单
+
+4. 管理员用例：
+   - 伦理审查
+   - 管理用户账号
+   - 处理争议申诉
+   - 系统配置维护
+
+5. 用例间关系：
+   - 报名实验 «include» 签署知情同意书
+   - 发布实验 «include» 配置筛选条件
+   - 发布实验 «include» 配置互斥规则
+
+6. 注释：
+   - 知情同意书：强制流程，记录签署时间+IP+设备
+   - 资格校验：含年龄/性别/信誉分/互斥规则
+
+要求：使用 package 作为系统边界，左到右布局，带颜色区分
+```
+
+**B. 类图**
+
+**AI 提问模板**：
+```
+帮我生成一个心理学被试招募平台的类图 PlantUML 代码。
+
+需要包含以下类（全中文）：
+1. 用户 (User)
+   - 属性：用户ID、用户名、密码、手机号、邮箱、角色、信誉分、研究者评分
+   - 方法：登录()、更新档案()
+
+2. 被试档案 (ParticipantProfile)
+   - 属性：档案ID、用户ID、匿名编号、年龄段、性别、专业类别、利手
+   - 方法：获取脱敏信息()、更新信誉分()
+
+3. 实验项目 (Experiment)
+   - 属性：实验ID、标题、描述、地点、时间、伦理编号、风险等级、报酬金额、筛选条件(JSON)、互斥标签、状态
+   - 方法：发布实验()、取消实验()、匹配筛选条件()
+
+4. 报名记录 (Registration)
+   - 属性：报名ID、实验ID、用户ID、状态、报名时间、审核时间、签到时间、是否完成
+   - 方法：报名()、取消报名()、签到()
+
+5. 知情同意书 (ConsentRecord)
+   - 属性：记录ID、报名ID、版本、签署时间、IP地址、设备指纹、是否验证
+   - 方法：签署()、验证()
+
+6. 支付记录 (PaymentRecord)
+   - 属性：记录ID、报名ID、支付方ID、收款方ID、金额、支付截图、研究者确认时间、被试确认时间、状态
+   - 方法：研究者确认支付()、被试确认收款()、发起争议()
+
+7. 评价记录 (Review)
+   - 属性：评价ID、报名ID、评价者ID、被评价者ID、评价类型、总评分、沟通评分、专业性评分、准时性评分、文字评价、是否匿名
+   - 方法：提交评价()、修改评价()
+
+8. 申诉记录 (Appeal)
+   - 属性：申诉ID、申诉人ID、申诉类型、关联记录ID、申诉理由、证据图片、状态、审核意见
+   - 方法：提交申诉()、审核申诉()
+
+9. 信誉分记录 (ReputationLog)
+   - 属性：记录ID、用户ID、变动类型、分数变动、原因、记录时间
+
+类关系：
+- User 1 -- 1 ParticipantProfile
+- User 1 -- 0..* Registration
+- Experiment 1 -- 0..* Registration
+- Registration 1 -- 1 ConsentRecord
+- Registration 1 -- 1 PaymentRecord
+- Registration 1 -- 0..* Review
+- Review 1 -- 0..* Appeal
+- PaymentRecord 1 -- 0..* Appeal
+- User 1 -- 0..* ReputationLog
+
+注释：
+- 被试档案：匿名化设计，研究者端仅展示脱敏信息
+- 知情同意书：伦理合规要求，强制签署
+- 支付记录：线下支付，平台仅做确认记录
+- 评价记录：双向评价，支持匿名
+
+要求：使用正交连线，带注释说明
+```
+
+**C. 活动图（报名流程）**
+
+**AI 提问模板**：
+```
+帮我生成一个被试报名流程的活动图 PlantUML 代码。
+
+流程：
+1. 被试登录系统
+2. 浏览实验列表
+3. 点击目标实验
+4. 资格预校验（partition）：
+   - 系统加载实验筛选条件
+   - 获取被试档案信息
+   - 判断：年龄在要求范围内？
+     - 否：提示"年龄不符合要求"，结束
+     - 是：继续
+   - 判断：性别符合要求？
+     - 否：提示"性别不符合要求"，结束
+     - 是：继续
+   - 判断：信誉分 >= 60？
+     - 否：提示"信誉分不足"，结束
+     - 是：继续
+   - 判断：30天内参加过同类实验？
+     - 是：提示"近期已参加过同类实验"，结束
+     - 否：资格校验通过
+5. 展示知情同意书
+6. 被试阅读并勾选"我已理解风险"
+7. 判断：未勾选同意？
+   - 是：提示"必须同意才能报名"，结束
+   - 否：继续
+8. 提交报名申请
+9. 后端处理（partition）：
+   - 创建报名记录
+   - 创建知情同意书记录
+   - 记录签署时间+IP+设备
+   - 发送通知给研究者
+   - 更新被试报名列表
+10. 显示"报名成功，等待审核"
+11. 并行（fork）：
+    - 研究者在后台审核
+      - 判断：审核通过？
+        - 是：发送"审核通过"通知
+        - 否：发送"审核拒绝"通知
+    - 被试进入"我的报名"查看审核状态
+
+底部注释：
+- 流程说明：4项资格校验、强制知情同意、研究者审核
+- 心理学特色：互斥规则、信誉分约束、匿名化隐私保护
+
+要求：使用 partition 分组，菱形条件判断，带颜色标注
+```
+
+**D. 活动图（支付流程）**
+
+**AI 提问模板**：
+```
+帮我生成一个报酬支付确认流程的活动图 PlantUML 代码。
+
+流程：
+1. 实验完成
+2. 被试操作（partition）：
+   - 上传收款码（微信/支付宝）
+   - 等待研究者联系
+3. 研究者线下扫码支付
+4. 研究者操作（partition）：
+   - 上传支付截图
+   - 标记"已支付"
+5. 系统通知被试确认
+6. 判断：被试确认收款？
+   - 是：支付状态更新为"已确认"，触发双向评价流程，结束
+   - 否：继续
+7. 判断：超过7天？
+   - 是：系统自动确认，触发评价流程
+   - 否：等待被试确认
+8. 判断：被试提出异议？
+   - 是：创建申诉记录，状态标记为"争议中"，管理员介入审核
+     - 判断：申诉成立？
+       - 是：撤销支付确认，重新进入支付流程
+       - 否：维持原确认，关闭申诉
+   - 否：结束
+
+右侧注释：
+- 设计说明：平台不经手资金，仅做确认记录；支付截图作为纠纷凭证；超时自动确认避免流程卡住；申诉机制保障双方权益
+
+要求：使用 partition 分组，清晰展示双方交互
+```
+
+**E. 序列图（至少3个）**
+
+**AI 提问模板**：
+```
+帮我生成3个序列图 PlantUML 代码。
+
+序列图1：被试报名实验序列图
+参与者：被试、小程序、后端API、数据库
+消息流程：
+1. 被试 -> 小程序：点击报名按钮
+2. 小程序 -> 后端API：POST /api/registrations
+3. 后端API -> 数据库：查询被试档案
+4. 后端API -> 数据库：查询实验筛选条件
+5. 后端API -> 后端API：资格校验（年龄/性别/信誉分/互斥规则）
+6. alt 资格校验通过
+   - 后端API -> 数据库：创建报名记录
+   - 后端API -> 数据库：创建知情同意书记录
+   - 后端API -> 小程序：返回报名成功
+   - 小程序 -> 被试：显示"报名成功，等待审核"
+else 资格校验失败
+   - 后端API -> 小程序：返回失败原因
+   - 小程序 -> 被试：显示具体失败原因
+end
+
+序列图2：支付确认序列图
+参与者：被试、研究者、小程序、后端API、数据库
+消息流程：
+1. 实验完成 -> 后端API：标记实验完成
+2. 后端API -> 数据库：创建支付记录（PENDING状态）
+3. 被试 -> 小程序：上传收款码
+4. 小程序 -> 后端API：POST /api/payment/codes
+5. 后端API -> 数据库：保存收款码
+6. 研究者 -> 小程序：查看收款码
+7. 研究者线下扫码支付
+8. 研究者 -> 小程序：上传支付截图，标记已支付
+9. 小程序 -> 后端API：POST /api/payment/records/confirm-payer
+10. 后端API -> 数据库：更新支付记录（PAID状态）
+11. 后端API -> 小程序：发送通知给被试
+12. 被试 -> 小程序：确认收款
+13. 小程序 -> 后端API：POST /api/payment/records/confirm-payee
+14. 后端API -> 数据库：更新支付记录（CONFIRMED状态）
+15. 后端API -> 后端API：触发双向评价流程
+
+序列图3：双向评价序列图
+参与者：被试、研究者、小程序、后端API、数据库
+消息流程：
+1. 支付确认完成 -> 后端API：触发评价流程
+2. 后端API -> 小程序：发送评价提醒
+3. par 并行评价
+   - 被试 -> 小程序：填写评价（研究者）
+   - 小程序 -> 后端API：POST /api/reviews
+   - 后端API -> 数据库：保存评价记录
+   - 后端API -> 后端API：更新研究者平均评分
+   - 被试 -> 小程序：提交评价
+   - 小程序 -> 研究者：显示评价（匿名）
+   and
+   - 研究者 -> 小程序：填写评价（被试）
+   - 小程序 -> 后端API：POST /api/reviews
+   - 后端API -> 数据库：保存评价记录
+   - 后端API -> 数据库：更新被试信誉分
+   - 研究者 -> 小程序：提交评价
+   - 小程序 -> 被试：显示评价
+end
+
+要求：使用 alt/par/opt 等组合片段，清晰展示消息流向
+```
+
+**F. 状态图**
+
+**AI 提问模板**：
+```
+帮我生成两个状态图 PlantUML 代码。
+
+状态图1：实验状态流转图
+状态：
+- DRAFT（草稿）
+- PUBLISHED（已发布）
+- RECRUITING（招募中）
+- FULL（已满员）
+- ONGOING（进行中）
+- COMPLETED（已结束）
+- CANCELLED（已取消）
+
+转换：
+- DRAFT -> PUBLISHED：研究者发布
+- PUBLISHED -> RECRUITING：到达招募开始时间
+- RECRUITING -> FULL：报名人数达到上限
+- RECRUITING -> ONGOING：到达实验开始时间
+- FULL -> ONGOING：到达实验开始时间
+- ONGOING -> COMPLETED：实验结束
+- 任意状态 -> CANCELLED：研究者取消
+
+状态图2：支付记录状态流转图
+状态：
+- PENDING（待支付）
+- PAID（已支付）
+- CONFIRMED（已确认）
+- DISPUTED（争议中）
+
+转换：
+- PENDING -> PAID：研究者上传支付截图并标记
+- PAID -> CONFIRMED：被试确认收款
+- PAID -> CONFIRMED：超时7天自动确认
+- PAID -> DISPUTED：被试发起争议
+- DISPUTED -> CONFIRMED：管理员审核通过（维持支付）
+- DISPUTED -> PENDING：管理员审核拒绝（撤销确认）
+
+要求：使用 state 关键字，标注转换条件和触发事件
+```
+
+---
+
+### 📦 成员3交付文件清单
+
+| 类型 | 文件路径/名称 | 说明 |
+|------|--------------|------|
+| **代码** | `web-frontend/src/views/` | 所有页面 Vue 文件（至少8个） |
+| **代码** | `web-frontend/src/components/` | 公共组件 |
+| **代码** | `web-frontend/src/router/index.js` | 路由配置 |
+| **代码** | `web-frontend/src/api/` | 接口封装 JS（至少5个模块） |
+| **代码** | `web-frontend/src/store/` | Pinia store |
+| **代码** | `web-frontend/src/utils/request.js` | axios 封装 |
+| **代码** | `web-frontend/package.json` | 前端依赖 |
+| **代码** | `web-frontend/vite.config.js` | Vite 配置 |
+| **文档** | `组长学号-姓名-系统建模报告.pdf` | 主笔（含用例图1、类图1、活动图2、序列图3、状态图2） |
+| **文档** | `组长学号-姓名-需求分析报告.pdf` | 协助成员5（功能需求部分） |
+
+---
+
+## 👤 成员4：小程序核心功能 + 测试负责人
+
+### 🎯 核心职责
+负责微信小程序开发（含收款码/评价/申诉页面）、测试工作（测试用例、缺陷跟踪、测试报告）。
+
+---
+
+### 1️⃣ **微信小程序开发（原生）**
+
+**项目初始化**
+
+**AI 提问模板**：
+```
+帮我用微信开发者工具创建一个小程序项目。
+
+需要包含：
+1. 项目配置（project.config.json）：
+   - appid（测试用）
+   - projectname
+   - miniprogram_root
+
+2. app.json 配置：
+   - pages（页面路径）
+   - window（导航栏颜色、标题）
+   - tabBar（底部导航）：
+     * 首页（实验列表）
+     * 我的报名
+     * 我的（个人中心）
+   - networkTimeout（网络超时设置）
+
+3. app.js：
+   - globalData（全局数据）
+   - onLaunch（检查登录状态）
+   - 封装全局方法
+
+4. utils/request.js：
+   - 封装 wx.request 为 Promise
+   - 请求拦截器（添加 token）
+   - 响应拦截器（处理错误）
+   - 统一错误提示
+
+5. 目录结构：
+   - pages/（页面）
+   - components/（组件）
+   - utils/（工具函数）
+   - images/（图片资源）
+
+要求：项目结构清晰，配置完整
+```
+
+**A. 首页 - 实验列表**
+
+**AI 提问模板**：
+```
+写微信小程序首页（实验列表页）。
+
+需要包含：
+1. 页面结构（index.wxml）：
+   - 顶部搜索框（输入实验标题）
+   - 筛选栏（实验类型、风险等级）
+   - 实验列表（scroll-view）
+   - 实验卡片：
+     * 封面图
+     * 标题
+     * 地点图标 + 地点
+     * 时间图标 + 开始时间
+     * 报酬图标 + 报酬金额
+     * 状态标签（招募中/已满员等）
+     * 剩余名额显示
+   - 下拉刷新提示
+   - 上拉加载更多提示
+
+2. 样式（index.wxss）：
+   - 卡片式布局
+   - 阴影效果
+   - 响应式设计
+
+3. 逻辑（index.js）：
+   - data：activities 数组、page、size、total、loading、hasMore
+   - onLoad：加载实验列表
+   - onPullDownRefresh：下拉刷新
+   - onReachBottom：上拉加载
+   - onSearch：搜索功能
+   - goToDetail：点击跳转到详情页
+   - 调用 GET /api/experiments 接口
+
+要求：支持分页加载，性能优化（图片懒加载）
+```
+
+**B. 实验详情页**
+
+**AI 提问模板**：
+```
+写微信小程序实验详情页面。
+
+需要包含：
+1. 页面结构（detail.wxml）：
+   - 实验封面图
+   - 实验标题
+   - 伦理信息卡片（重点）：
+     * 伦理审批编号
+     * 风险等级（图标+文字）
+     * 研究者信息
+   - 实验详情（富文本）：
+     * 实验目的
+     * 实验流程
+     * 参与要求
+   - 筛选条件展示：
+     * 年龄要求
+     * 性别要求
+     * 其他要求
+   - 互斥规则提示
+   - 报酬信息：
+     * 金额
+     * 支付方式（线下支付说明）
+   - 底部操作栏：
+     * "资格自检"按钮
+     * "立即报名"按钮（状态判断）
+
+2. 逻辑（detail.js）：
+   - onLoad：获取实验ID，加载详情
+   - 调用 GET /api/experiments/{id} 接口
+   - 资格自检功能：
+     * 获取当前用户档案
+     * 与实验筛选条件对比
+     * 显示匹配结果（✅/❌）
+   - 报名按钮状态：
+     * 未登录：显示"登录后报名"
+     * 已报名：显示"已报名"（灰色）
+     * 已满员：显示"已满员"（灰色）
+     * 可报名：显示"立即报名"（可点击）
+   - 点击报名：
+     * 跳转到知情同意书签署页
+
+要求：界面清晰，伦理信息醒目，报名流程顺畅
+```
+
+**C. 知情同意书签署页面（重点）**
+
+**AI 提问模板**：
+```
+写微信小程序知情同意书签署页面（重点页面）。
+
+需要包含：
+1. 页面结构（consent.wxml）：
+   - 页面标题："知情同意书"
+   - 同意书内容区域（scroll-view）：
+     * 实验标题
+     * 研究者信息
+     * 实验目的
+     * 实验流程
+     * 潜在风险
+     * 报酬说明
+     * 隐私保护说明
+     * 自愿参与声明
+   - 固定底部操作栏：
+     * 勾选框："我已阅读并理解以上内容，同意参与实验"
+     * "同意并报名"按钮（勾选后才可点击）
+
+2. 逻辑（consent.js）：
+   - onLoad：获取 registrationId
+   - 调用 GET /api/consent/{registrationId} 获取同意书内容
+   - onAgreeChange：勾选框状态变化
+   - onSubmit：
+     * 检查是否勾选
+     * 获取当前时间、IP、设备信息
+     * 调用 POST /api/consent/sign
+     * 提交成功跳转到"我的报名"页
+     * 提交失败显示错误提示
+
+3. 样式（consent.wxss）：
+   - 同意书内容区域可滚动
+   - 底部操作栏固定
+   - 勾选框醒目
+   - 按钮禁用状态样式
+
+要求：强制阅读流程，签署记录完整（时间/IP/设备）
+```
+
+**D. 上传收款码页面（新增）**
+
+**AI 提问模板**：
+```
+写微信小程序上传收款码页面。
+
+需要包含：
+1. 页面结构（payment-code.wxml）：
+   - 页面标题："上传收款码"
+   - 支付方式选择（单选）：
+     * 微信支付
+     * 支付宝
+   - 收款码上传区域：
+     * 点击上传图片
+     * 预览已上传图片
+     * 支持拍照或从相册选择
+   - 提示信息：
+     * "请确保收款码清晰可见"
+     * "研究者将线下扫码支付"
+     * "支付后请确认收款"
+   - 提交按钮
+
+2. 逻辑（payment-code.js）：
+   - data：paymentType, qrCodeUrl
+   - onChooseImage：调用 wx.chooseImage
+   - onUpload：调用 wx.uploadFile 上传图片
+   - onSubmit：
+     * 验证是否选择支付方式
+     * 验证是否上传收款码
+     * 调用 POST /api/payment/codes
+     * 保存成功显示提示
+     * 返回上一级
+
+3. 样式（payment-code.wxss）：
+   - 上传区域虚线边框
+   - 图片预览圆角
+   - 按钮醒目
+
+要求：操作简单，支持拍照和相册选择
+```
+
+**E. 我的报名页面**
+
+**AI 提问模板**：
+```
+写微信小程序"我的报名"页面。
+
+需要包含：
+1. 页面结构（my-registrations.wxml）：
+   - 顶部标签页（swiper + tabs）：
+     * 待审核
+     * 已通过
+     * 已拒绝
+     * 已完成
+   - 报名列表（每个标签页）：
+     * 实验卡片：
+       - 实验标题
+       - 时间地点
+       - 报酬金额
+       - 状态标签
+     * 操作按钮：
+       - 待审核：显示"等待审核"（灰色）
+       - 已通过：显示"上传收款码"、"查看二维码"
+       - 已拒绝：显示"拒绝原因"
+       - 已完成：显示"评价研究者"、"查看报酬"
+
+2. 逻辑（my-registrations.js）：
+   - data：currentTab, registrations（按状态分类）
+   - onLoad：加载报名列表
+   - onShow：刷新列表
+   - onTabChange：切换标签页
+   - 调用 GET /api/registrations/my 接口
+   - 上传收款码：跳转到 payment-code 页
+   - 查看二维码：调用 GET /api/experiments/{id}/qrcode，wx.previewImage 预览
+   - 评价研究者：跳转到 review 页
+
+3. 样式（my-registrations.wxss）：
+   - 标签页醒目
+   - 卡片式布局
+   - 状态标签颜色区分
+
+要求：状态清晰，操作便捷
+```
+
+**F. 扫码签到页面**
+
+**AI 提问模板**：
+```
+写微信小程序扫码签到页面。
+
+需要包含：
+1. 页面结构（signin-scan.wxml）：
+   - 页面标题："扫码签到"
+   - 扫码按钮（大按钮）
+   - 提示信息：
+     * "请扫描研究者提供的签到二维码"
+     * "签到成功后会有提示音"
+   - 签到记录（可选）：
+     * 显示最近签到时间
+
+2. 逻辑（signin-scan.js）：
+   - data：scanning（是否正在扫码）
+   - onScan：
+     * 设置 scanning = true
+     * 调用 wx.scanCode
+     * 解析二维码内容（experimentId）
+     * 调用 POST /api/signin/qr
+     * 签到成功：
+       - 播放提示音（wx.createInnerAudioContext）
+       - 显示"签到成功"提示
+       - 1.5秒后返回
+     * 签到失败：显示错误原因
+     * 设置 scanning = false
+   - 错误处理：
+     * 用户取消扫码
+     * 二维码无效
+     * 网络错误
+
+3. 样式（signin-scan.wxss）：
+   - 扫码按钮醒目
+   - 居中布局
+   - 动画效果
+
+要求：扫码流畅，反馈及时
+```
+
+**G. 评价页面（新增）**
+
+**AI 提问模板**：
+```
+写微信小程序评价研究者页面。
+
+需要包含：
+1. 页面结构（review.wxml）：
+   - 页面标题："评价研究者"
+   - 实验信息卡片：
+     * 实验标题
+     * 实验时间
+   - 评分区域（重点）：
+     * 总评分（1-5星，点击星星评分）
+     * 沟通态度评分（1-5星）
+     * 专业性评分（1-5星）
+     * 准时性评分（1-5星）
+   - 文字评价区域：
+     * 文本域（多行输入）
+     * 字数限制（200字）
+     * 字数统计
+   - 匿名评价勾选框：
+     * "匿名评价（研究者看不到您的身份）"
+   - 提交按钮
+
+2. 逻辑（review.js）：
+   - data：ratings（各项评分）、comment、isAnonymous
+   - onRatingChange：星星评分变化
+   - onCommentInput：文字输入变化
+   - onSubmit：
+     * 验证总评分是否选择
+     * 组装评价数据
+     * 调用 POST /api/reviews
+     * 提交成功显示提示
+     * 返回"我的报名"页
+   - 评价后不可修改（除非申诉）
+
+3. 样式（review.wxss）：
+   - 星星评分组件美观
+   - 文本域边框
+   - 按钮醒目
+
+要求：评分直观，操作流畅，支持匿名
+```
+
+**H. 申诉页面（新增）**
+
+**AI 提问模板**：
+```
+写微信小程序申诉页面。
+
+需要包含：
+1. 页面结构（appeal.wxml）：
+   - 页面标题："发起申诉"
+   - 申诉对象信息：
+     * 申诉类型（低评分/信誉扣分/支付争议）
+     * 关联记录（评价内容/扣分记录）
+   - 申诉理由（文本域）：
+     * 必填
+     * 详细说明问题
+     * 字数限制（500字）
+   - 证据上传：
+     * 上传截图/聊天记录
+     * 支持多图上传
+     * 预览已上传图片
+   - 提交按钮
+
+2. 逻辑（appeal.js）：
+   - data：appealType, targetId, reason, evidenceUrls
+   - onLoad：获取申诉类型和关联记录ID
+   - onReasonInput：申诉理由输入
+   - onUploadEvidence：调用 wx.chooseImage 上传图片
+   - onSubmit：
+     * 验证申诉理由是否填写
+     * 组装申诉数据
+     * 调用 POST /api/appeals
+     * 提交成功显示提示
+     * 返回上一级
+
+3. 样式（appeal.wxss）：
+   - 表单布局清晰
+   - 图片上传区域
+   - 按钮醒目
+
+要求：流程简单，证据上传方便
+```
+
+**I. 个人中心页面**
+
+**AI 提问模板**：
+```
+写微信小程序个人中心页面。
+
+需要包含：
+1. 页面结构（profile.wxml）：
+   - 用户信息卡片：
+     * 头像
+     * 昵称
+     * 匿名ID（P-2025-001格式）
+   - 统计数据：
+     * 参与实验数
+     * 累计报酬
+     * 信誉分（带颜色：>80绿色，60-80黄色，<60红色）
+   - 菜单列表：
+     * 我的评价（查看收到的评价）
+     * 消息通知（系统通知）
+     * 收款码管理
+     * 申诉记录
+     * 设置
+   - 退出登录按钮
+
+2. 逻辑（profile.js）：
+   - onLoad：加载用户信息
+   - 调用 GET /api/users/profile
+   - 调用 GET /api/statistics/user/{id}
+   - 菜单点击跳转
+   - 退出登录：
+     * wx.showModal 确认
+     * 清除 token（wx.removeStorageSync）
+     * 跳转到登录页
+
+3. 样式（profile.wxss）：
+   - 卡片式布局
+   - 统计数据横向排列
+   - 菜单列表项
+   - 信誉分颜色区分
+
+要求：信息清晰，操作便捷
+```
+
+---
+
+### 2️⃣ **测试工作**
+
+**A. 测试计划**
+
+**AI 提问模板**：
+```
+帮我写一个心理学被试招募平台的测试计划。
+
+需要包含：
+1. 测试目标：
+   - 验证核心功能（报名/支付/评价/申诉）是否正常
+   - 验证资格校验逻辑是否正确
+   - 验证匿名化隐私保护是否有效
+   - 验证系统性能和稳定性
+
+2. 测试范围：
+   - 功能测试：所有页面和接口
+   - 接口测试：所有 RESTful API
+   - 性能测试：并发访问、响应时间
+   - 兼容性测试：不同手机型号、微信版本
+   - 安全测试：JWT认证、数据加密
+
+3. 测试环境：
+   - 开发环境：localhost:8080
+   - 测试环境：测试服务器
+   - 生产环境：正式服务器
+
+4. 测试工具：
+   - Postman（接口测试）
+   - JMeter（性能测试）
+   - 微信开发者工具（小程序测试）
+   - Selenium（Web自动化测试）
+
+5. 测试进度安排：
+   - 第1-2周：编写测试用例
+   - 第3-8周：执行功能测试
+   - 第9-10周：执行接口测试
+   - 第11-12周：执行性能测试
+   - 第13-14周：缺陷修复与回归测试
+
+6. 测试准入/准出标准：
+   - 准入：开发完成，单元测试通过
+   - 准出：所有用例执行完毕，严重Bug修复率100%
+
+要求：详细、可执行
+```
+
+**B. 测试用例设计**
+
+**AI 提问模板**：
+```
+帮我设计心理学被试招募平台的测试用例（Excel格式）。
+
+需要包含以下模块的测试用例（至少50条）：
+
+1. 用户模块（5条）：
+   - 注册成功
+   - 注册失败（用户名重复）
+   - 登录成功
+   - 登录失败（密码错误）
+   - 更新个人信息
+
+2. 实验模块（8条）：
+   - 创建实验成功
+   - 发布实验
+   - 查询实验列表
+   - 查询实验详情
+   - 更新实验
+   - 取消实验
+   - 实验状态自动更新
+   - 筛选条件配置
+
+3. 报名模块（12条）：
+   - 报名成功
+   - 报名失败（年龄不符）
+   - 报名失败（性别不符）
+   - 报名失败（信誉分不足）
+   - 报名失败（互斥冲突）
+   - 报名失败（重复报名）
+   - 报名失败（已满员）
+   - 取消报名
+   - 审核通过
+   - 审核拒绝
+   - 查询我的报名
+   - 查询实验报名列表
+
+4. 知情同意模块（5条）：
+   - 签署成功
+   - 签署记录查询
+   - 未勾选不能提交
+   - 签署时间记录
+   - IP地址记录
+
+5. 支付模块（8条）：
+   - 上传收款码
+   - 研究者确认支付
+   - 被试确认收款
+   - 超时自动确认
+   - 发起支付争议
+   - 争议审核通过
+   - 争议审核拒绝
+   - 支付状态查询
+
+6. 评价模块（7条）：
+   - 被试评价研究者
+   - 研究者评价被试
+   - 重复评价失败
+   - 匿名评价
+   - 评价修改
+   - 平均评分计算
+   - 评价申诉
+
+7. 信誉分模块（5条）：
+   - 初始分100
+   - 按时完成加分
+   - 爽约扣分
+   - 信誉分查询
+   - 低分限制报名
+
+Excel表头：
+- 用例编号（TC001, TC002...）
+- 模块
+- 测试项
+- 前置条件
+- 测试步骤
+- 测试数据
+- 预期结果
+- 实际结果
+- 状态（待执行/通过/失败）
+- 执行人
+- 执行日期
+
+要求：覆盖正常场景、异常场景、边界场景
+```
+
+**C. 缺陷跟踪**
+
+**AI 提问模板**：
+```
+帮我设计一个缺陷跟踪表模板（Excel格式）。
+
+表头包含：
+1. Bug编号（BUG001, BUG002...）
+2. 标题（简短描述问题）
+3. 严重程度（致命/严重/一般/轻微）
+4. 优先级（P0/P1/P2/P3）
+5. 模块（用户/实验/报名/支付/评价等）
+6. 发现环境（开发/测试/生产）
+7. 发现版本
+8. 发现人
+9. 发现日期
+10. 复现步骤（详细步骤）
+11. 预期结果
+12. 实际结果
+13. 附件（截图/日志）
+14. 指派给（开发人员）
+15. 状态（新建/已确认/已修复/已关闭/重新打开）
+16. 修复人
+17. 修复日期
+18. 修复说明
+19. 验证人
+20. 验证日期
+21. 备注
+
+示例Bug记录（至少10个）：
+1. BUG001：报名资格校验失效，年龄不符也能报名
+2. BUG002：支付截图上传失败
+3. BUG003：小程序扫码签到闪退
+4. BUG004：信誉分计算错误
+5. BUG005：匿名ID泄露真实身份
+6. BUG006：评价提交后页面不刷新
+7. BUG007：实验列表分页错误
+8. BUG008：知情同意书签署时间记录错误
+9. BUG009：申诉状态不更新
+10. BUG010：导出Excel乱码
+
+要求：记录完整，便于追踪
+```
+
+**D. 接口测试（Postman）**
+
+**AI 提问模板**：
+```
+帮我用 Postman 测试心理学被试招募平台 API。
+
+需要包含：
+1. 创建 Collection：
+   - 名称：心理学被试招募平台API
+   - 描述：所有接口测试集合
+
+2. 设置环境变量：
+   - base_url: http://localhost:8080
+   - token: （登录后获取）
+   - user_id: （当前用户ID）
+   - experiment_id: （测试实验ID）
+
+3. 编写测试请求（至少20个）：
+   - 用户注册
+   - 用户登录（Tests脚本：保存token到环境变量）
+   - 获取个人信息
+   - 创建实验
+   - 发布实验
+   - 查询实验列表
+   - 报名实验
+   - 审核报名
+   - 签署知情同意
+   - 上传收款码
+   - 确认支付
+   - 确认收款
+   - 提交评价
+   - 查询评价
+   - 发起申诉
+   - 扫码签到
+   - 查询信誉分
+   - 导出Excel
+
+4. Tests 脚本示例：
+   - 验证响应状态码：pm.response.to.have.status(200)
+   - 验证响应时间：pm.expect(pm.response.responseTime).to.be.below(500)
+   - 验证数据结构：pm.response.json().data.should.have.property('id')
+   - 保存变量：pm.environment.set('token', pm.response.json().data.token)
+
+5. Pre-request Script：
+   - 添加 Authorization header：pm.request.headers.add('Authorization', 'Bearer ' + pm.environment.get('token'))
+
+6. 导出 Collection：
+   - 导出为 JSON 文件
+   - 提交到 tests/postman/ 目录
+
+要求：所有接口都有测试用例，包含验证脚本
+```
+
+---
+
+### 📦 成员4交付文件清单
+
+| 类型 | 文件路径/名称 | 说明 |
+|------|--------------|------|
+| **代码** | `miniprogram/pages/index/` | 首页（实验列表） |
+| **代码** | `miniprogram/pages/detail/` | 实验详情页 |
+| **代码** | `miniprogram/pages/consent/` | 知情同意书签署页 |
+| **代码** | `miniprogram/pages/payment-code/` | 上传收款码页 |
+| **代码** | `miniprogram/pages/my-registrations/` | 我的报名页 |
+| **代码** | `miniprogram/pages/signin-scan/` | 扫码签到页 |
+| **代码** | `miniprogram/pages/review/` | 评价页 |
+| **代码** | `miniprogram/pages/appeal/` | 申诉页 |
+| **代码** | `miniprogram/pages/profile/` | 个人中心页 |
+| **代码** | `miniprogram/utils/request.js` | 请求封装 |
+| **代码** | `miniprogram/app.js/json/wxss` | 小程序配置 |
+| **代码** | `miniprogram/project.config.json` | 项目配置 |
+| **文档** | `组长学号-姓名-软件测试与质量保证报告.pdf` | 主笔 |
+| **文档** | `tests/测试用例.xlsx` | 至少50条测试用例 |
+| **文档** | `tests/缺陷跟踪记录.xlsx` | 至少10个Bug记录 |
+| **文档** | `tests/postman/API接口测试集合.json` | Postman 测试文件 |
+
+---
+
+## 👤 成员5：需求分析 + 辅助模块 + 测试自动化 + 文档统筹
+
+### 🎯 核心职责
+负责通知/配置/申诉审核模块、小程序辅助页面、自动化测试脚本、需求/团队文档、演示视频、最终打包。
+
+---
+
+### 1️⃣ **后端辅助模块开发**
+
+**A. 通知模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现通知模块。
+
+需要包含：
+1. NotificationController 控制器，提供以下接口：
+   - GET /api/notifications/my（获取我的通知）
+   - PUT /api/notifications/{id}/read（标记已读）
+   - PUT /api/notifications/read-all（全部标记已读）
+   - DELETE /api/notifications/{id}（删除通知）
+
+2. NotificationService 服务层：
+   - 发送通知（系统通知、报名审核通知、支付提醒等）
+   - 获取未读通知数量
+   - 批量发送通知
+
+3. NotificationRepository 数据访问层
+
+4. 实体类 Notification：
+   - id, user_id, title, content, type
+   - is_read, created_at
+
+5. 通知类型：
+   - REGISTRATION_APPROVED（报名审核通过）
+   - REGISTRATION_REJECTED（报名审核拒绝）
+   - PAYMENT_CONFIRMED（支付确认）
+   - EXPERIMENT_STARTED（实验开始提醒）
+   - REVIEW_RECEIVED（收到评价）
+   - APPEAL_PROCESSED（申诉处理完成）
+
+6. 定时任务：
+   - 实验开始前24小时发送提醒
+
+要求：支持站内通知，未来可扩展微信模板消息
+```
+
+**B. 配置模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现系统配置模块。
+
+需要包含：
+1. ConfigController 控制器，提供以下接口：
+   - GET /api/config/activity-types（获取实验类型列表）
+   - GET /api/config/locations（获取常用地点列表）
+   - GET /api/config/tags（获取实验标签列表）
+   - PUT /api/config（更新配置 - 管理员）
+
+2. ConfigService 服务层：
+   - 获取配置（带Redis缓存）
+   - 更新配置
+   - 清除缓存
+
+3. ConfigRepository 数据访问层
+
+4. 实体类 Config：
+   - id, config_key, config_value, description
+
+5. 配置项：
+   - 实验类型（认知/社会/临床/发展）
+   - 常用地点
+   - 专业类别
+   - 互斥标签（fMRI/情绪类/认知类等）
+   - 系统参数（信誉分阈值、超时时间等）
+
+要求：使用Redis缓存提高查询性能，管理员可后台管理
+```
+
+**C. 申诉审核模块**
+
+**AI 提问模板**：
+```
+用 Spring Boot 实现申诉审核模块。
+
+需要包含：
+1. AppealController 控制器，提供以下接口：
+   - POST /api/appeals（提交申诉）
+   - GET /api/appeals/my（我的申诉列表）
+   - GET /api/appeals（管理员查看所有申诉）
+   - PUT /api/appeals/{id}/review（审核申诉 - 管理员）
+
+2. AppealService 服务层：
+   - 提交申诉
+   - 审核申诉（通过/拒绝）
+   - 撤销原操作（如恢复信誉分、删除评价）
+   - 发送审核结果通知
+
+3. AppealRepository 数据访问层
+
+4. 实体类 Appeal：
+   - id, appellant_id, appeal_type, target_id
+   - reason, evidence_urls (JSON)
+   - status, reviewer_id, review_comment
+   - reviewed_at, created_at
+
+5. 申诉类型：
+   - REPUTATION_DEDUCTION（信誉分扣分申诉）
+   - LOW_RATING（低评分申诉）
+   - PAYMENT_DISPUTE（支付争议申诉）
+
+6. 审核流程：
+   - 提交申诉（状态PENDING）
+   - 管理员审核（状态UNDER_REVIEW）
+   - 审核通过（状态APPROVED）：撤销原操作
+   - 审核拒绝（状态REJECTED）：维持原状
+
+要求：申诉记录永久保存，支持证据上传（图片）
+```
+
+---
+
+### 2️⃣ **小程序辅助页面**
+
+**A. 消息通知页面**
+
+**AI 提问模板**：
+```
+写微信小程序消息通知页面。
+
+需要包含：
+1. 页面结构（notifications.wxml）：
+   - 页面标题："消息通知"
+   - 顶部"全部已读"按钮
+   - 通知列表：
+     * 通知卡片：
+       - 标题
+       - 内容摘要
+       - 时间
+       - 未读红点
+   - 下拉刷新
+
+2. 逻辑（notifications.js）：
+   - onLoad：加载通知列表
+   - onShow：刷新未读数量
+   - onPullDownRefresh：下拉刷新
+   - 调用 GET /api/notifications/my
+   - 点击通知：
+     * 标记已读（调用 PUT /api/notifications/{id}/read）
+     * 跳转到相关页面（如报名详情）
+   - 全部已读：调用 PUT /api/notifications/read-all
+
+3. 样式（notifications.wxss）：
+   - 未读通知背景色略深
+   - 红点醒目
+   - 卡片式布局
+
+要求：实时显示未读数量，点击标记已读
+```
+
+**B. 申诉记录页面**
+
+**AI 提问模板**：
+```
+写微信小程序申诉记录页面。
+
+需要包含：
+1. 页面结构（appeals.wxml）：
+   - 页面标题："申诉记录"
+   - 申诉列表：
+     * 申诉卡片：
+       - 申诉类型
+       - 申诉时间
+       - 状态标签（待审核/审核中/通过/拒绝）
+       - 审核意见（如有）
+   - "发起申诉"按钮（浮动）
+
+2. 逻辑（appeals.js）：
+   - onLoad：加载申诉列表
+   - 调用 GET /api/appeals/my
+   - 点击卡片：查看详情
+   - 发起申诉：跳转到 appeal 页
+
+3. 样式（appeals.wxss）：
+   - 状态标签颜色区分
+   - 卡片式布局
+   - 浮动按钮
+
+要求：状态清晰，可查看审核进度
+```
+
+---
+
+### 3️⃣ **自动化测试开发**
+
+**A. 集成测试（Java）**
+
+**AI 提问模板**：
+```
+帮我用 Spring Boot Test 编写集成测试。
+
+需要测试的完整流程：
+
+1. ActivityFlowIntegrationTest：
+   - 流程：创建实验 → 发布实验 → 被试报名 → 审核通过 → 签署知情同意 → 扫码签到 → 标记完成 → 支付确认 → 双向评价
+   - 使用 @SpringBootTest
+   - 使用 @Transactional 回滚
+   - 使用 MockMvc 模拟HTTP请求
+   - 验证每个步骤的数据变化
+
+2. PaymentFlowIntegrationTest：
+   - 流程：上传收款码 → 研究者确认支付 → 被试确认收款 → 触发评价
+   - 验证支付状态流转
+
+3. AppealFlowIntegrationTest：
+   - 流程：提交申诉 → 管理员审核 → 撤销原操作
+   - 验证申诉处理逻辑
+
+要求：
+- 测试覆盖率 > 60%
+- 包含正常流程和异常流程
+- 使用断言验证结果
+```
+
+**B. API自动化测试（Python）**
+
+**AI 提问模板**：
+```
+帮我用 Python + pytest + requests 编写 API 自动化测试脚本。
+
+项目结构：
+tests/api/
+  - conftest.py（fixture）
+  - test_auth.py（认证测试）
+  - test_experiment.py（实验测试）
+  - test_registration.py（报名测试）
+  - test_payment.py（支付测试）
+  - test_review.py（评价测试）
+
+示例代码（test_registration.py）：
+```python
+import requests
+import pytest
+
+class TestRegistration:
+    base_url = "http://localhost:8080/api"
+    
+    @pytest.fixture
+    def auth_token(self):
+        # 登录获取token
+        response = requests.post(f'{self.base_url}/auth/login', 
+                                json={'username': 'test', 'password': '123456'})
+        return response.json()['data']['token']
+    
+    def test_create_registration_success(self, auth_token):
+        """测试报名成功"""
+        headers = {'Authorization': f'Bearer {auth_token}'}
+        data = {'experimentId': 1}
+        response = requests.post(f'{self.base_url}/registrations',
+                                json=data, headers=headers)
+        assert response.status_code == 200
+        assert response.json()['data']['status'] == 'PENDING'
+    
+    def test_create_registration_age_not_match(self, auth_token):
+        """测试年龄不符报名失败"""
+        # 准备测试数据
+        # 调用报名接口
+        # 验证返回错误信息
+    
+    def test_create_registration_reputation_low(self, auth_token):
+        """测试信誉分不足报名失败"""
+        # 准备测试数据（信誉分<60）
+        # 调用报名接口
+        # 验证返回错误信息
+    
+    def test_create_registration_tag_conflict(self, auth_token):
+        """测试互斥冲突报名失败"""
+        # 准备测试数据（30天内参加过同类实验）
+        # 调用报名接口
+        # 验证返回错误信息
+```
+
+运行测试：
+```bash
+pytest tests/api/ -v --html=report.html
+```
+
+生成 HTML 报告：
+- 安装 pytest-html：pip install pytest-html
+- 添加 --html=report.html 参数
+
+要求：覆盖核心业务逻辑，生成测试报告
+```
+
+**C. 性能测试（Locust）**
+
+**AI 提问模板**：
+```
+帮我用 Locust 编写性能测试脚本。
+
+文件：tests/performance/locustfile.py
+
+```python
+from locust import HttpUser, task, between
+import random
+
+class SubjectUser(HttpUser):
+    """被试用户"""
+    wait_time = between(1, 3)
+    token = None
+    
+    def on_start(self):
+        """用户开始时的操作：登录"""
+        response = self.client.post('/api/auth/login', 
+                                   json={'username': 'subject1', 
+                                        'password': '123456'})
+        if response.status_code == 200:
+            self.token = response.json()['data']['token']
+    
+    @task(3)
+    def get_experiments(self):
+        """测试实验列表接口性能"""
+        headers = {'Authorization': f'Bearer {self.token}'}
+        self.client.get('/api/experiments', 
+                       params={'page': 1, 'size': 10},
+                       headers=headers)
+    
+    @task(2)
+    def create_registration(self):
+        """测试报名接口性能"""
+        experiment_id = random.randint(1, 50)
+        headers = {'Authorization': f'Bearer {self.token}'}
+        self.client.post('/api/registrations',
+                        json={'experimentId': experiment_id},
+                        headers=headers)
+    
+    @task(1)
+    def sign_in(self):
+        """测试签到接口性能"""
+        headers = {'Authorization': f'Bearer {self.token}'}
+        self.client.post('/api/signin/qr',
+                        json={'experimentId': 1},
+                        headers=headers)
+
+class ResearcherUser(HttpUser):
+    """研究者用户"""
+    wait_time = between(2, 5)
+    token = None
+    
+    def on_start(self):
+        response = self.client.post('/api/auth/login', 
+                                   json={'username': 'researcher1', 
+                                        'password': '123456'})
+        if response.status_code == 200:
+            self.token = response.json()['data']['token']
+    
+    @task(2)
+    def create_experiment(self):
+        """测试创建实验接口性能"""
+        headers = {'Authorization': f'Bearer {self.token}'}
+        data = {
+            'title': '性能测试实验',
+            'location': '测试地点',
+            'startTime': '2025-06-01 09:00:00',
+            'endTime': '2025-06-01 17:00:00',
+            'maxParticipants': 50
+        }
+        self.client.post('/api/experiments',
+                        json=data,
+                        headers=headers)
+    
+    @task(3)
+    def review_registrations(self):
+        """测试审核报名接口性能"""
+        headers = {'Authorization': f'Bearer {self.token}'}
+        self.client.get('/api/registrations/experiment/1',
+                       headers=headers)
+```
+
+运行命令：
+```bash
+locust -f tests/performance/locustfile.py --host=http://localhost:8080
+```
+
+访问 http://localhost:8089 查看性能测试仪表盘。
+
+要求：模拟100个并发用户，记录响应时间、TPS、错误率
+```
+
+**D. 测试数据生成工具**
+
+**AI 提问模板**：
+```
+帮我写一个 Python 脚本，使用 Faker 库生成测试数据。
+
+文件：scripts/generate_test_data.py
+
+```python
+from faker import Faker
+import mysql.connector
+import random
+from datetime import datetime, timedelta
+import hashlib
+
+fake = Faker('zh_CN')
+
+def generate_users(count=100):
+    """生成测试用户"""
+    users = []
+    for i in range(count):
+        role = random.choice(['SUBJECT', 'RESEARCHER', 'ADMIN'])
+        users.append({
+            'username': f'user{i}',
+            'password': hashlib.sha256('123456'.encode()).hexdigest(),
+            'phone': fake.phone_number(),
+            'email': fake.email(),
+            'role': role,
+            'reputation_score': 100 if role == 'SUBJECT' else None,
+            'researcher_rating': 5.0 if role == 'RESEARCHER' else None
+        })
+    return users
+
+def generate_participant_profiles(user_ids, count=80):
+    """生成被试档案"""
+    profiles = []
+    genders = ['MALE', 'FEMALE', 'OTHER']
+    majors = ['心理学类', '计算机类', '文学类', '理学类']
+    handedness = ['LEFT', 'RIGHT', 'MIXED']
+    
+    for i in range(count):
+        user_id = random.choice(user_ids)
+        profiles.append({
+            'user_id': user_id,
+            'anonymous_id': f'P-2025-{str(i+1).zfill(3)}',
+            'age_group': random.choice(['18-22', '23-25', '26-30']),
+            'gender': random.choice(genders),
+            'major_category': random.choice(majors),
+            'handedness': random.choice(handedness),
+            'reputation_score': random.randint(60, 100)
+        })
+    return profiles
+
+def generate_experiments(researcher_ids, count=50):
+    """生成实验项目"""
+    experiments = []
+    statuses = ['DRAFT', 'PUBLISHED', 'RECRUITING', 'FULL', 'ONGOING', 'COMPLETED']
+    risk_levels = ['LOW', 'MEDIUM', 'HIGH']
+    
+    for i in range(count):
+        start_time = fake.date_time_between(start_date='+1d', end_date='+30d')
+        end_time = start_time + timedelta(hours=random.randint(2, 8))
+        
+        experiments.append({
+            'title': fake.sentence(nb_words=6),
+            'description': fake.paragraph(),
+            'location': fake.address(),
+            'start_time': start_time,
+            'end_time': end_time,
+            'ethics_approval_no': f'IRB-2025-PSY-{str(i+1).zfill(3)}',
+            'risk_level': random.choice(risk_levels),
+            'payment_amount': round(random.uniform(50, 200), 2),
+            'payment_method': 'OFFLINE',
+            'payment_description': '实验结束后现场支付',
+            'screening_criteria': '{"include": {"age_range": [18, 25], "gender": "female"}}',
+            'exclude_tags': '["fMRI", "情绪类"]',
+            'status': random.choice(statuses),
+            'organizer_id': random.choice(researcher_ids)
+        })
+    return experiments
+
+def insert_to_database(users, profiles, experiments):
+    """插入数据到MySQL"""
+    conn = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='password',
+        database='psychology_platform'
+    )
+    cursor = conn.cursor()
+    
+    # 插入用户
+    user_ids = []
+    for user in users:
+        cursor.execute("""
+            INSERT INTO users (username, password, phone, email, role, reputation_score)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (user['username'], user['password'], user['phone'], 
+              user['email'], user['role'], user.get('reputation_score')))
+        user_ids.append(cursor.lastrowid)
+    
+    # 插入被试档案
+    for profile in profiles:
+        cursor.execute("""
+            INSERT INTO participant_profiles (user_id, anonymous_id, age_group, gender, 
+                                             major_category, handedness, reputation_score)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (profile['user_id'], profile['anonymous_id'], profile['age_group'],
+              profile['gender'], profile['major_category'], profile['handedness'],
+              profile['reputation_score']))
+    
+    # 插入实验
+    for experiment in experiments:
+        cursor.execute("""
+            INSERT INTO experiments (title, description, location, start_time, end_time,
+                                    ethics_approval_no, risk_level, payment_amount, 
+                                    payment_method, payment_description, screening_criteria,
+                                    exclude_tags, status, organizer_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (experiment['title'], experiment['description'], experiment['location'],
+              experiment['start_time'], experiment['end_time'], experiment['ethics_approval_no'],
+              experiment['risk_level'], experiment['payment_amount'], experiment['payment_method'],
+              experiment['payment_description'], experiment['screening_criteria'],
+              experiment['exclude_tags'], experiment['status'], experiment['organizer_id']))
+    
+    conn.commit()
+    cursor.close()
+    conn.close()
+    
+    print(f"成功生成：")
+    print(f"  - {len(users)} 个用户")
+    print(f"  - {len(profiles)} 个被试档案")
+    print(f"  - {len(experiments)} 个实验项目")
+
+if __name__ == '__main__':
+    users = generate_users(100)
+    # 分离研究者ID
+    researcher_ids = [i+1 for i, user in enumerate(users) if user['role'] == 'RESEARCHER']
+    # 生成被试档案（80个）
+    profiles = generate_participant_profiles(list(range(1, 101)), 80)
+    # 生成实验（50个）
+    experiments = generate_experiments(researcher_ids, 50)
+    # 插入数据库
+    insert_to_database(users, profiles, experiments)
+```
+
+运行：
+```bash
+pip install faker mysql-connector-python
+python scripts/generate_test_data.py
+```
+
+要求：生成真实可用的测试数据，包含100个用户、80个被试档案、50个实验
+```
+
+---
+
+### 4️⃣ **文档工作**
+
+**A. 需求分析报告**
+
+**AI 提问模板**：
+```
+帮我写一份心理学被试招募平台的需求分析报告。
+
+需要包含：
+
+1. 引言：
+   - 项目背景（心理学研究招募难问题）
+   - 项目目标（提高招募效率、保障伦理合规）
+   - 文档范围
+   - 术语定义（被试、研究者、知情同意书等）
+
+2. 系统目标：
+   - 业务目标：
+     * 解决微信群招募信息散乱问题
+     * 提高被试筛选效率
+     * 保障伦理合规性
+     * 降低爽约率
+   - 用户目标：
+     * 研究者：快速招募合格被试
+     * 被试：方便查找和报名实验
+     * 管理员：有效管理平台
+   - 技术目标：
+     * 高可用性（99% uptime）
+     * 响应时间 < 2秒
+     * 支持1000并发用户
+     * 数据安全性
+
+3. 用户群体：
+   - 被试（在校大学生）
+   - 研究者（心理学系师生）
+   - 管理员（系所管理人员）
+   - 各群体的特征和需求
+
+4. 功能需求（Use Case描述）：
+   每个用例包含：
+   - 用例名称
+   - 参与者
+   - 前置条件
+   - 后置条件
+   - 主流程（步骤）
+   - 备选流程
+   - 异常流程
+   
+   核心用例（至少15个）：
+   - 用户注册登录
+   - 浏览实验列表
+   - 报名实验（含资格校验）
+   - 签署知情同意书
+   - 上传收款码
+   - 确认支付
+   - 扫码签到
+   - 发布实验
+   - 配置筛选条件
+   - 审核报名
+   - 双向评价
+   - 发起申诉
+   - 伦理审查
+   - 导出数据
+
+5. 非功能需求：
+   - 性能需求：
+     * 页面响应时间 < 2秒
+     * 接口响应时间 < 500ms
+     * 支持1000并发用户
+     * 数据库查询 < 100ms
+   - 安全性需求：
+     * 密码 BCrypt 加密
+     * JWT token 认证
+     * HTTPS 传输
+     * 敏感信息脱敏
+     * 防止SQL注入/XSS
+   - 可用性需求：
+     * 界面简洁易用
+     * 操作步骤 < 3步
+     * 支持移动端
+     * 无障碍访问
+   - 可维护性需求：
+     * 代码注释率 > 30%
+     * 遵循RESTful规范
+     * 模块化设计
+     * 完整API文档
+   - 隐私保护需求：
+     * 被试匿名化
+     * 知情同意书签署记录
+     * 数据访问权限控制
+     * 符合GDPR/个人信息保护法
+
+6. 约束条件：
+   - 技术约束：Spring Boot + Vue3 + 微信小程序
+   - 时间约束：16周开发周期
+   - 团队约束：5人小组
+   - 伦理约束：符合心理学研究伦理规范
+
+7. 假设与依赖：
+   - 假设用户有智能手机和微信
+   - 依赖MySQL数据库
+   - 依赖Redis缓存
+   - 依赖云服务部署
+
+要求：结构清晰，需求详尽，符合软件工程标准
+```
+
+**B. 团队报告**
+
+**AI 提问模板**：
+```
+帮我写一份团队报告模板。
+
+需要包含：
+
+1. 团队组成：
+   - 成员1（组长）：学号、姓名、角色（后端架构）、负责模块
+   - 成员2：学号、姓名、角色（后端业务+工程化）、负责模块
+   - 成员3：学号、姓名、角色（Web前端+建模）、负责模块
+   - 成员4：学号、姓名、角色（小程序+测试）、负责模块
+   - 成员5：学号、姓名、角色（需求分析+辅助模块+文档）、负责模块
+
+2. 各阶段工作分配：
+   第1-2周（需求与设计）：
+   - 成员1：数据库设计、项目框架搭建
+   - 成员2：参与需求讨论
+   - 成员3：用例图、类图绘制
+   - 成员4：参与需求讨论
+   - 成员5：需求调研、需求报告初稿
+   
+   第3-4周（系统建模与架构）：
+   - 成员1：架构设计文档
+   - 成员2：Git仓库搭建、CI/CD配置
+   - 成员3：系统建模报告（4类UML图）
+   - 成员4：测试计划编写
+   - 成员5：完善需求报告
+   
+   第5-8周（迭代开发1）：
+   - 成员1：用户模块、实验模块API
+   - 成员2：报名模块、签到模块API
+   - 成员3：Web登录页、实验管理页
+   - 成员4：小程序首页、详情页
+   - 成员5：通知模块、配置模块API
+   
+   第9-12周（迭代开发2）：
+   - 成员1：支付模块API、Redis缓存
+   - 成员2：评价模块、信誉分模块、单元测试
+   - 成员3：报名审核页、支付确认页、评价页
+   - 成员4：我的报名页、扫码签到页、评价页、测试用例执行
+   - 成员5：申诉模块、小程序辅助页、自动化测试
+   
+   第13-14周（测试与优化）：
+   - 成员1：服务器部署、运维文档
+   - 成员2：工程化文档、Swagger文档
+   - 成员3：建模报告完成、Web优化
+   - 成员4：测试报告完成、缺陷跟踪
+   - 成员5：性能测试、需求报告定稿
+   
+   第15周（文档整合）：
+   - 成员1：配置文档定稿
+   - 成员2：协助打包
+   - 成员3：协助打包
+   - 成员4：协助打包
+   - 成员5：团队报告、演示视频、文档整合、最终打包
+
+3. 个人贡献说明：
+   每个成员详细列出：
+   - 完成的代码模块（文件路径、代码行数）
+   - 编写的文档（文档名称、页数）
+   - 解决的问题（技术难点）
+   - 协作贡献（Code Review、帮助他人等）
+
+4. 遇到的困难及解决方案：
+   - 技术困难（如资格校验逻辑复杂）
+   - 协作困难（如Git冲突）
+   - 时间困难（如进度滞后）
+   - 如何解决
+
+5. 团队协作经验总结：
+   - 使用的协作工具（Git、腾讯文档、微信群）
+   - 沟通方式（每日站会、周会）
+   - 代码审查流程
+   - 经验教训
+
+要求：详细、真实、体现团队协作
+```
+
+**C. 演示视频脚本**
+
+**AI 提问模板**：
+```
+帮我写一个项目演示视频脚本（7分钟）。
+
+视频结构：
+
+0:00-0:30  项目介绍（成员5出镜）
+- 项目名称：心理学被试招募平台
+- 团队介绍（5人）
+- 解决什么问题（招募难、伦理合规）
+- 核心功能概览
+
+0:30-2:00  Web管理后台演示（成员3出镜）
+- 登录系统
+- 创建实验（展示伦理信息配置、筛选条件配置、互斥规则配置）
+- 发布实验
+- 审核报名（展示被试档案脱敏信息）
+- 支付确认（展示支付截图上传）
+- 查看评价
+
+2:00-4:00  小程序演示（成员4出镜）
+- 浏览实验列表
+- 查看实验详情（展示伦理信息卡片）
+- 资格自检
+- 报名实验
+- 签署知情同意书（展示强制阅读流程）
+- 上传收款码
+- 扫码签到
+- 评价研究者
+- 发起申诉
+
+4:00-5:00  技术亮点（成员1出镜）
+- 系统架构图（展示分层架构）
+- 数据库设计（展示11张表关系）
+- 资格校验逻辑（展示4项校验）
+- 匿名化设计（展示被试档案）
+- Redis缓存优化
+
+5:00-6:00  工程化实践（成员2出镜）
+- Git分支管理（展示分支图）
+- CI/CD流程（展示GitHub Actions截图）
+- 代码质量扫描（展示SonarQube报告）
+- 接口文档（展示Swagger页面）
+- 单元测试覆盖率
+
+6:00-6:40  测试与质量（成员5出镜）
+- 自动化测试脚本（展示Python测试代码）
+- 性能测试结果（展示Locust仪表盘）
+- 测试用例覆盖（展示Excel测试用例）
+- 缺陷跟踪（展示Bug记录）
+
+6:40-7:00  总结（全员出镜）
+- 项目成果（功能完成度）
+- 学习收获（软件工程实践）
+- 感谢观看
+
+拍摄建议：
+- 使用录屏软件（OBS）
+- 背景音乐轻柔
+- 字幕清晰
+- 画面流畅
+- 每人着装整洁
+
+要求：逻辑清晰，重点突出，展示核心功能和技术亮点
+```
+
+**D. 最终文档整合**
+
+**AI 提问模板**：
+```
+帮我写一个文档整合清单和打包脚本。
+
+文档整合清单：
+
+1. 检查所有必需文件：
+   □ 需求分析报告.pdf
+   □ 系统建模报告.pdf
+   □ 架构设计文档.pdf
+   □ 软件工程化说明文档.pdf
+   □ 软件测试与质量保证报告.pdf
+   □ 软件配置与运维文档.pdf
+   □ 团队报告.pdf
+   □ 项目演示视频.mp4（可选）
+   □ 源代码文件夹
+
+2. 命名规范检查：
+   - 所有文件名：组长学号-组长姓名-文件名.pdf
+   - 示例：20210001-张三-需求分析报告.pdf
+
+3. 格式统一：
+   - PDF 文件：A4纸张、宋体小四、1.5倍行距
+   - 页眉：项目名称
+   - 页脚：页码
+   - 封面：项目名称、团队信息、日期
+
+4. 内容检查：
+   - 目录完整
+   - 图表编号连续
+   - 参考文献格式统一
+   - 无错别字
+
+5. 源代码检查：
+   - 包含后端代码（src/）
+   - 包含前端代码（web-frontend/）
+   - 包含小程序代码（miniprogram/）
+   - 包含数据库脚本（schema.sql）
+   - 包含配置文件（application.yml）
+   - 包含README.md（项目说明）
+   - 删除不必要的文件（node_modules、target、.idea等）
+
+6. 打包：
+   - 所有文件放入一个文件夹
+   - 文件夹命名：组长学号-组长姓名-心理学被试招募平台
+   - 压缩为 zip 格式
+   - 最终文件名：组长学号-组长姓名-心理学被试招募平台.zip
+
+Python打包脚本示例：
+```python
+import os
+import zipfile
+
+def create_zip():
+    folder_name = "20210001-张三-心理学被试招募平台"
+    zip_name = "20210001-张三-心理学被试招募平台.zip"
+    
+    with zipfile.ZipFile(zip_name, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # 添加文档
+        docs = [
+            "20210001-张三-需求分析报告.pdf",
+            "20210001-张三-系统建模报告.pdf",
+            # ... 其他文档
+        ]
+        for doc in docs:
+            zipf.write(doc, arcname=os.path.join(folder_name, doc))
+        
+        # 添加源代码
+        for root, dirs, files in os.walk('backend'):
+            for file in files:
+                if not file.endswith(('.class', '.jar')):
+                    file_path = os.path.join(root, file)
+                    zipf.write(file_path, arcname=os.path.join(folder_name, file_path))
+        
+        # 添加README
+        zipf.write('README.md', arcname=os.path.join(folder_name, 'README.md'))
+    
+    print(f"打包完成：{zip_name}")
+
+if __name__ == '__main__':
+    create_zip()
+```
+
+要求：确保所有文件齐全，命名规范，压缩包大小适中
+```
+
+---
+
+### 📦 成员5交付文件清单
+
+| 类型 | 文件路径/名称 | 说明 |
+|------|--------------|------|
+| **代码** | `src/main/java/com/project/notification/` | 通知模块代码 |
+| **代码** | `src/main/java/com/project/config/` | 配置模块代码 |
+| **代码** | `src/main/java/com/project/appeal/` | 申诉审核模块代码 |
+| **代码** | `miniprogram/pages/notifications/` | 消息通知页 |
+| **代码** | `miniprogram/pages/appeals/` | 申诉记录页 |
+| **代码** | `src/test/java/com/project/integration/` | 集成测试代码 |
+| **代码** | `tests/api/` | API自动化测试脚本 |
+| **代码** | `tests/performance/locustfile.py` | 性能测试脚本 |
+| **代码** | `scripts/generate_test_data.py` | 测试数据生成脚本 |
+| **文档** | `组长学号-姓名-需求分析报告.pdf` | 主笔 |
+| **文档** | `组长学号-姓名-团队报告.pdf` | 主笔 |
+| **视频** | `组长学号-姓名-项目演示.mp4` | 统筹制作（7分钟） |
+| **其他** | `README.md` | 项目说明 |
+| **其他** | `打包脚本.py` | 最终打包脚本 |
+| **其他** | `最终压缩包.zip` | 所有文件整合 |
+
+---
+
+## 📊 五人工作量总览
+
+| 成员 | 后端模块 | 前端模块 | 测试代码 | 文档 | 总工作量 |
+|------|---------|---------|---------|------|---------|
+| **成员1** | 4个核心模块（用户/实验/支付/数据库） | 0 | 0 | 2份（架构+运维） | ⭐⭐⭐⭐⭐ |
+| **成员2** | 5个业务模块（报名/签到/评价/信誉分/统计） | 0 | 单元测试 | 1份（工程化） | ⭐⭐⭐⭐⭐ |
+| **成员3** | 0 | Web后台8个页面 | 0 | 1份（建模报告）+ 协助需求 | ⭐⭐⭐⭐⭐ |
+| **成员4** | 0 | 小程序9个页面 | Postman测试 | 1份（测试报告）+ 测试用例 | ⭐⭐⭐⭐⭐ |
+| **成员5** | 3个辅助模块（通知/配置/申诉） | 小程序2个页面 | 自动化测试脚本 | 2份（需求+团队）+ 视频 + 打包 | ⭐⭐⭐⭐⭐ |
+
+---
+
+## 🔄 模块对接关系
+
+```
+成员1（核心后端 + 数据库）
+    ↓ 提供基础API和数据库表
+成员2（业务后端 + 工程化）
+    ↓ 提供业务API和测试框架
+成员3（Web前端） ←→ 成员4（小程序）
+    ↓                    ↓
+成员5（辅助模块 + 自动化测试 + 文档统筹）
+    ↓
+最终整合与打包
+```
+
+---
+
+## 📅 详细协作时间线（16周）
+
+| 周次 | 阶段 | 成员1 | 成员2 | 成员3 | 成员4 | 成员5 |
+|------|------|-------|-------|-------|-------|-------|
+| 1-2 | 需求与设计 | 数据库设计、框架搭建 | 参与需求讨论 | 用例图、类图 | 参与需求讨论 | 需求调研、报告初稿 |
+| 3-4 | 建模与架构 | 架构设计文档 | Git仓库、CI/CD | 系统建模报告 | 测试计划 | 完善需求报告 |
+| 5-8 | 迭代开发1 | 用户/实验API | 报名/签到API | Web登录/实验管理 | 小程序首页/详情 | 通知/配置API |
+| 9-12 | 迭代开发2 | 支付API、Redis | 评价/信誉分API、单元测试 | 报名审核/支付/评价页 | 我的报名/签到/评价页 | 申诉API、小程序辅助页、自动化测试 |
+| 13-14 | 测试与优化 | 部署、运维文档 | 工程化文档、Swagger | 建模报告完成、Web优化 | 测试报告、缺陷跟踪 | 性能测试、需求报告定稿 |
+| 15 | 文档整合 | 配置文档定稿 | 协助打包 | 协助打包 | 协助打包 | 团队报告、视频、文档整合、打包 |
+| 16 | 提交 | 组长提交 | - | - | - | - |
+
+---
+
+## ✅ 提交前检查清单
+
+### 文档类（7份）
+- [ ] 需求分析报告.pdf（成员5主笔）
+- [ ] 系统建模报告.pdf（成员3主笔，含用例图1、类图1、活动图2、序列图3、状态图2）
+- [ ] 架构设计文档.pdf（成员1主笔）
+- [ ] 软件工程化说明文档.pdf（成员2主笔，含CI/CD截图、Swagger截图）
+- [ ] 软件测试与质量保证报告.pdf（成员4主笔，含测试用例50+、Bug记录10+）
+- [ ] 软件配置与运维文档.pdf（成员1主笔）
+- [ ] 团队报告.pdf（成员5主笔，含每人贡献说明）
+
+### 代码类
+- [ ] 后端源代码（成员1+2+5，含11个模块）
+- [ ] Web前端源代码（成员3，含8个页面）
+- [ ] 小程序源代码（成员4+5，含11个页面）
+- [ ] 数据库脚本 schema.sql（成员1）
+- [ ] 配置文件（application.yml、package.json等）
+- [ ] README.md（成员5）
+
+### 其他
+- [ ] 项目演示视频.mp4（成员5统筹，7分钟，全员出镜）
+- [ ] 所有文件按命名要求：组长学号-组长姓名-文件名
+- [ ] 打包成 zip：组长学号-组长姓名-心理学被试招募平台.zip
+- [ ] 第16周周日（2025-06-21）23:59前发送至 920626166@qq.com
+
+---
+
+## 🎯 评分标准对照
+
+| 评分项 | 占比 | 如何体现 | 负责人 |
+|--------|------|---------|--------|
+| 项目完成度 | 25% | 实现所有核心功能（报名/支付/评价/申诉）、代码规范 | 全员 |
+| 软件过程管理 | 10% | Git提交记录、任务分配明确、团队协作 | 成员5（团队报告） |
+| 需求工程 | 10% | 需求分析报告详尽、Use Case清晰 | 成员5 |
+| 系统建模 | 10% | 5类UML图完整、准确反映系统 | 成员3 |
+| 架构设计 | 10% | 架构文档详细、分层合理、匿名化设计 | 成员1 |
+| 软件工程化 | 15% | CI/CD、Git分支、SonarQube、自动化测试 | 成员2+5 |
+| 测试与质量 | 10% | 测试用例50+、缺陷跟踪、质量保证方法 | 成员4 |
+| 配置运维 | 5% | Docker部署、版本控制、运维计划 | 成员1 |
+| 团队报告 | 5% | 每人贡献明确、工作分配清晰 | 成员5 |
+
+---
+
+现在五个人的分工已经**极度详细**，每个人都可以：
+1. **复制自己的部分**，直接跟AI对话生成代码
+2. **明确知道要做什么**，不会遗漏任何功能
+3. **清楚交付物**，知道要提交哪些文件和文档
+4. **了解时间节点**，知道什么时候该做什么
+
+需要我进一步细化某个人的任务，或者提供某个模块的完整代码示例吗？🚀
