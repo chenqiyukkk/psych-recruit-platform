@@ -1,0 +1,24 @@
+<view class="page notification-page">
+  <view class="toolbar">
+    <view class="title">通知中心</view>
+    <button class="ghost-button read-button" bindtap="markAllRead">全部已读</button>
+  </view>
+
+  <view wx:if="{{error}}" class="empty panel">{{error}}</view>
+  <view wx:if="{{!loading && notifications.length === 0 && !error}}" class="empty panel">
+    暂无通知
+  </view>
+
+  <view class="notification-list">
+    <view wx:for="{{notifications}}" wx:key="id" class="notification-card panel">
+      <view class="notification-top">
+        <view class="notification-title">{{item.title}}</view>
+        <view wx:if="{{!item.isRead}}" class="unread-dot"></view>
+      </view>
+      <view class="notification-content">{{item.content}}</view>
+      <view class="notification-time">{{item.createdAtText}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+</view>

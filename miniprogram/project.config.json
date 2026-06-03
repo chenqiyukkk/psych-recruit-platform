@@ -1,0 +1,14 @@
+{
+  "description": "心试通微信小程序端",
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.7.0",
+  "appid": "touristappid",
+  "projectname": "psych-recruit-platform-miniapp"
+}
