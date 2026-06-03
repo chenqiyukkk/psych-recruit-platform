@@ -22,6 +22,9 @@ public class SecurityConfig {
     http.authorizeRequests()
         .antMatchers(
             "/api/auth/**",
+            "/api/config/experiment-types",
+            "/api/config/locations",
+            "/api/config/tags",
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
