@@ -3,7 +3,7 @@
 使用 Faker 库生成用户、被试档案、实验项目等测试数据并插入 MySQL 数据库。
 
 依赖安装：
-    pip install faker mysql-connector-python
+    pip install faker mysql-connector-python bcrypt
 
 使用方式：
     python scripts/generate_test_data.py
@@ -14,7 +14,6 @@
 """
 
 import argparse
-import hashlib
 import json
 import random
 import sys
@@ -36,10 +35,16 @@ except ImportError:
     print("[ERROR] 未安装 mysql-connector-python 库，请先执行: pip install mysql-connector-python")
     sys.exit(1)
 
+try:
+    import bcrypt
+except ImportError:
+    print("[ERROR] 未安装 bcrypt 库，请先执行: pip install bcrypt")
+    sys.exit(1)
+
 # ---------------------------------------------------------------------------
 # 常量定义（与后端枚举对齐）
 # ---------------------------------------------------------------------------
-ROLES = ["SUBJECT", "RESEARCHER", "ADMIN"]
+ROLES = ["被试", "研究者", "管理员"]
 GENDERS = ["MALE", "FEMALE", "OTHER"]
 AGE_GROUPS = ["18-22", "23-25", "26-30", "31-35"]
 MAJOR_CATEGORIES = ["心理学类", "计算机类", "文学类", "理学类", "工学类", "医学类", "经管类"]
@@ -59,13 +64,13 @@ NOTIFICATION_TYPES = [
 ]
 EXPERIMENT_TAGS = ["fMRI", "情绪类", "认知类", "社会类", "发展类", "临床类", "行为类"]
 CONFIG_KEYS = [
-    ("activity_types", '["认知", "社会", "临床", "发展", "行为"]', "实验类型列表"),
-    ("locations", '["心理学楼101", "心理学楼201", "实验中心A栋", "图书馆报告厅"]', "常用地点列表"),
-    ("experiment_tags", '["fMRI", "情绪类", "认知类", "社会类", "发展类", "临床类", "行为类"]', "实验标签列表"),
-    ("major_categories", '["心理学类", "计算机类", "文学类", "理学类", "工学类", "医学类", "经管类"]', "专业类别列表"),
-    ("reputation_threshold", "60", "最低信誉分阈值"),
-    ("payment_auto_confirm_days", "7", "支付超时自动确认天数"),
-    ("experiment_remind_hours", "24", "实验开始前提醒小时数"),
+    ("experiment_types", '["认知", "社会", "临床", "发展", "行为"]', "实验类型列表", "EXPERIMENT"),
+    ("locations", '["心理学楼101", "心理学楼201", "实验中心A栋", "图书馆报告厅"]', "常用地点列表", "LOCATION"),
+    ("experiment_tags", '["fMRI", "情绪类", "认知类", "社会类", "发展类", "临床类", "行为类"]', "实验标签列表", "TAG"),
+    ("major_categories", '["心理学类", "计算机类", "文学类", "理学类", "工学类", "医学类", "经管类"]', "专业类别列表", "EXPERIMENT"),
+    ("reputation_threshold", "60", "最低信誉分阈值", "SYSTEM"),
+    ("payment_auto_confirm_days", "7", "支付超时自动确认天数", "SYSTEM"),
+    ("experiment_remind_hours", "24", "实验开始前提醒小时数", "SYSTEM"),
 ]
 
 fake = Faker("zh_CN")
@@ -77,15 +82,9 @@ random.seed(42)
 # 数据生成函数
 # ---------------------------------------------------------------------------
 
-def _bcrypt_placeholder(plain: str) -> str:
-    """
-    生产环境应使用 BCrypt，此处生成一个格式合法的占位哈希（SHA-256 前缀）。
-    实际插入数据库后如需登录，请在后端用相同的明文密码重新注册，
-    或直接在数据库中用 BCrypt 工具替换该字段。
-    """
-    sha = hashlib.sha256(plain.encode()).hexdigest()
-    # 模拟 BCrypt 格式前缀，让后端能识别（长度 60 位以上）
-    return f"$2a$10${sha[:53]}"
+def _bcrypt_hash(plain: str) -> str:
+    """使用 bcrypt 生成与 Spring Security 兼容的密码哈希。"""
+    return bcrypt.hashpw(plain.encode(), bcrypt.gensalt(rounds=10)).decode()
 
 
 def generate_users(count: int = 100):
@@ -93,18 +92,18 @@ def generate_users(count: int = 100):
     users = []
     # 强制生成各角色代表账号，方便手动测试
     seeded = [
-        ("subject_test", "SUBJECT"),
-        ("researcher_test", "RESEARCHER"),
-        ("admin_test", "ADMIN"),
+        ("subject_test", "被试"),
+        ("researcher_test", "研究者"),
+        ("admin_test", "管理员"),
     ]
     for uname, role in seeded:
         users.append({
             "username": uname,
-            "password": _bcrypt_placeholder("123456"),
+            "password": _bcrypt_hash("123456"),
             "phone": fake.phone_number()[:32],
             "email": fake.email()[:128],
             "role": role,
-            "reputation_score": 100 if role == "SUBJECT" else None,
+            "reputation_score": 100 if role == "被试" else None,
             "researcher_rating": None,
             "total_reviews": 0,
             "created_at": datetime.now() - timedelta(days=random.randint(1, 365)),
@@ -113,17 +112,17 @@ def generate_users(count: int = 100):
     for i in range(count - len(seeded)):
         role = random.choices(ROLES, weights=[70, 25, 5])[0]
         researcher_rating = (
-            round(random.uniform(3.0, 5.0), 2) if role == "RESEARCHER" else None
+            round(random.uniform(3.0, 5.0), 2) if role == "研究者" else None
         )
         users.append({
             "username": f"user_{i:04d}_{fake.user_name()[:20]}",
-            "password": _bcrypt_placeholder("123456"),
+            "password": _bcrypt_hash("123456"),
             "phone": fake.phone_number()[:32],
             "email": fake.email()[:128],
             "role": role,
-            "reputation_score": random.randint(40, 100) if role == "SUBJECT" else None,
+            "reputation_score": random.randint(40, 100) if role == "被试" else None,
             "researcher_rating": researcher_rating,
-            "total_reviews": random.randint(0, 50) if role == "RESEARCHER" else 0,
+            "total_reviews": random.randint(0, 50) if role == "研究者" else 0,
             "created_at": datetime.now() - timedelta(days=random.randint(1, 365)),
         })
     return users
@@ -135,7 +134,7 @@ def generate_participant_profiles(user_id_role_map: dict, count: int = 80):
     :param user_id_role_map: {user_id: role}
     :param count: 生成条数
     """
-    subject_ids = [uid for uid, role in user_id_role_map.items() if role == "SUBJECT"]
+    subject_ids = [uid for uid, role in user_id_role_map.items() if role == "被试"]
     if not subject_ids:
         print("[WARN] 没有找到 SUBJECT 用户，跳过被试档案生成")
         return []
@@ -257,7 +256,7 @@ def generate_configs():
             "config_value": value,
             "description": desc,
         }
-        for key, value, desc in CONFIG_KEYS
+        for key, value, desc, cat in CONFIG_KEYS
     ]
 
 
@@ -359,8 +358,19 @@ def insert_notifications(cursor, notifications: list):
 
 
 def insert_configs(cursor, configs: list):
+    # 确保 sys_config 表存在（与后端 Config 实体表名一致）
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS sys_config (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            config_key VARCHAR(100) NOT NULL,
+            config_value TEXT NOT NULL,
+            description VARCHAR(255) DEFAULT NULL,
+            PRIMARY KEY (id),
+            UNIQUE KEY uk_sys_config_key (config_key)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    """)
     sql = """
-        INSERT IGNORE INTO configs (config_key, config_value, description)
+        INSERT IGNORE INTO sys_config (config_key, config_value, description)
         VALUES (%s, %s, %s)
     """
     for c in configs:
@@ -376,8 +386,8 @@ def parse_args():
     parser.add_argument("--host", default="127.0.0.1", help="MySQL 主机（默认 127.0.0.1）")
     parser.add_argument("--port", type=int, default=3306, help="MySQL 端口（默认 3306）")
     parser.add_argument("--user", default="root", help="MySQL 用户名（默认 root）")
-    parser.add_argument("--password", default="123456", help="MySQL 密码（默认 123456）")
-    parser.add_argument("--database", default="psychology_platform", help="数据库名（默认 psychology_platform）")
+    parser.add_argument("--password", default="root", help="MySQL 密码（默认 root）")
+    parser.add_argument("--database", default="psych_recruit_platform", help="数据库名（默认 psych_recruit_platform）")
     parser.add_argument("--user-count", type=int, default=100, help="生成用户数量（默认 100）")
     parser.add_argument("--exp-count", type=int, default=50, help="生成实验数量（默认 50）")
     parser.add_argument("--notify-count", type=int, default=200, help="生成通知数量（默认 200）")
@@ -441,7 +451,7 @@ def main():
         conn.commit()
 
         # 3. 插入实验
-        researcher_ids = [uid for uid, role in id_role_map.items() if role == "RESEARCHER"]
+        researcher_ids = [uid for uid, role in id_role_map.items() if role == "研究者"]
         experiments = generate_experiments(researcher_ids, count=args.exp_count)
         print(f"  插入 {len(experiments)} 个实验项目...")
         experiment_ids = insert_experiments(cursor, experiments)
