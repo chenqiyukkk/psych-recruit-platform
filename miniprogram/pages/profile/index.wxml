@@ -1,0 +1,62 @@
+<view class="page profile-page">
+  <view wx:if="{{!token}}" class="login-panel panel">
+    <view class="login-title">登录心试通</view>
+    <input
+      class="form-input"
+      value="{{username}}"
+      placeholder="用户名"
+      bindinput="onUsernameInput"
+    />
+    <input
+      class="form-input"
+      value="{{password}}"
+      password
+      placeholder="密码"
+      bindinput="onPasswordInput"
+    />
+    <button class="primary-button" loading="{{loginLoading}}" bindtap="login">登录</button>
+  </view>
+
+  <block wx:else>
+    <view wx:if="{{error}}" class="empty panel">{{error}}</view>
+
+    <view wx:if="{{profile}}" class="profile-head panel">
+      <view>
+        <view class="role">{{profile.role}}</view>
+        <view class="name">{{profile.username}}</view>
+        <view class="contact">{{profile.email || '未填写邮箱'}} / {{profile.phone || '未填写手机号'}}</view>
+      </view>
+      <button class="ghost-button logout" bindtap="logout">退出</button>
+    </view>
+
+    <view wx:if="{{profile}}" class="metrics">
+      <view class="metric panel">
+        <view class="metric-value">{{profile.reputationScore || 0}}</view>
+        <view class="metric-label">信誉分</view>
+      </view>
+      <view class="metric panel">
+        <view class="metric-value">{{profile.researcherRating || 0}}</view>
+        <view class="metric-label">研究者评分</view>
+      </view>
+      <view class="metric panel" bindtap="openNotifications">
+        <view class="metric-value">{{unreadCount}}</view>
+        <view class="metric-label">未读通知</view>
+      </view>
+    </view>
+
+    <view class="section-title">我的报名</view>
+    <view wx:if="{{!loading && registrations.length === 0}}" class="empty panel">暂无报名记录</view>
+    <view class="registration-list">
+      <view wx:for="{{registrations}}" wx:key="id" class="registration-card panel">
+        <view class="registration-top">
+          <view class="registration-title">实验 #{{item.experimentId}}</view>
+          <view class="status status-{{item.statusClassName}}">{{item.statusText}}</view>
+        </view>
+        <view class="registration-meta">申请时间：{{item.appliedAtText}}</view>
+        <view class="registration-meta">完成状态：{{item.isCompleted ? '已完成' : '未完成'}}</view>
+      </view>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading">加载中...</view>
+  </block>
+</view>

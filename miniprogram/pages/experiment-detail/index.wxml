@@ -1,0 +1,50 @@
+<view class="page detail-page">
+  <view wx:if="{{loading}}" class="empty panel">加载中...</view>
+  <view wx:elif="{{error}}" class="empty panel">{{error}}</view>
+
+  <block wx:else>
+    <view class="detail-head panel">
+      <view class="status status-{{experiment.statusClassName}}">{{experiment.statusText}}</view>
+      <view class="title">{{experiment.title}}</view>
+      <view class="summary">{{experiment.description}}</view>
+    </view>
+
+    <view class="info-grid">
+      <view class="info-cell panel">
+        <view class="label">实验时间</view>
+        <view class="value">{{experiment.timeText}}</view>
+      </view>
+      <view class="info-cell panel">
+        <view class="label">地点</view>
+        <view class="value">{{experiment.location || '地点待定'}}</view>
+      </view>
+      <view class="info-cell panel">
+        <view class="label">报酬</view>
+        <view class="value highlight">{{experiment.paymentText}}</view>
+      </view>
+      <view class="info-cell panel">
+        <view class="label">风险等级</view>
+        <view class="value">{{experiment.riskLevel || '待评估'}}</view>
+      </view>
+    </view>
+
+    <view class="section panel">
+      <view class="section-title">筛选条件</view>
+      <view class="section-content">{{experiment.screeningCriteria || '暂无额外筛选条件'}}</view>
+    </view>
+
+    <view class="section panel">
+      <view class="section-title">排除标签</view>
+      <view class="section-content">{{experiment.excludeTags || '暂无排除标签'}}</view>
+    </view>
+
+    <view wx:if="{{experiment.paymentDescription}}" class="section panel">
+      <view class="section-title">报酬说明</view>
+      <view class="section-content">{{experiment.paymentDescription}}</view>
+    </view>
+
+    <button class="primary-button apply-button" loading="{{applying}}" bindtap="applyExperiment">
+      立即报名
+    </button>
+  </block>
+</view>

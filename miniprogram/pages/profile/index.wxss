@@ -1,0 +1,143 @@
+.login-panel {
+  padding: 34rpx;
+}
+
+.login-title {
+  margin-bottom: 28rpx;
+  font-size: 40rpx;
+  font-weight: 800;
+}
+
+.form-input {
+  height: 82rpx;
+  margin-bottom: 18rpx;
+  padding: 0 22rpx;
+  background: #f7f3ea;
+  border: 1rpx solid #e2d7c3;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+}
+
+.profile-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 32rpx;
+}
+
+.role {
+  color: #0f766e;
+  font-size: 24rpx;
+  font-weight: 700;
+}
+
+.name {
+  margin-top: 8rpx;
+  font-size: 42rpx;
+  font-weight: 800;
+}
+
+.contact {
+  margin-top: 14rpx;
+  color: #797166;
+  font-size: 24rpx;
+  line-height: 1.5;
+}
+
+.logout {
+  width: 120rpx;
+  flex-shrink: 0;
+}
+
+.metrics {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 22rpx;
+}
+
+.metric {
+  width: 214rpx;
+  min-height: 138rpx;
+  padding: 22rpx 12rpx;
+  text-align: center;
+}
+
+.metric-value {
+  color: #9a6a1d;
+  font-size: 38rpx;
+  font-weight: 800;
+}
+
+.metric-label {
+  margin-top: 8rpx;
+  color: #6f6a5f;
+  font-size: 22rpx;
+}
+
+.section-title {
+  margin: 34rpx 0 18rpx;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.registration-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.registration-card {
+  padding: 24rpx;
+}
+
+.registration-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14rpx;
+}
+
+.registration-title {
+  font-size: 30rpx;
+  font-weight: 750;
+}
+
+.registration-meta {
+  margin-top: 12rpx;
+  color: #797166;
+  font-size: 24rpx;
+}
+
+.status {
+  flex-shrink: 0;
+  padding: 8rpx 14rpx;
+  border-radius: 8rpx;
+  font-size: 22rpx;
+}
+
+.status-success {
+  background: #dff2ed;
+  color: #0f766e;
+}
+
+.status-warning {
+  background: #fff0c2;
+  color: #9a6a1d;
+}
+
+.status-danger {
+  background: #f8d9d3;
+  color: #9f2d2d;
+}
+
+.status-muted {
+  background: #ece5d8;
+  color: #6f6a5f;
+}
+
+.loading {
+  padding: 30rpx 0;
+  text-align: center;
+  color: #797166;
+  font-size: 26rpx;
+}

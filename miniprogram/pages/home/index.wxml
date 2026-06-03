@@ -1,0 +1,55 @@
+<view class="page home-page">
+  <view class="hero panel">
+    <view class="hero-kicker">心试通</view>
+    <view class="hero-title">发现适合你的心理学实验</view>
+    <view class="hero-subtitle">查看招募时间、地点、报酬与筛选条件，快速完成报名。</view>
+  </view>
+
+  <view class="search-row">
+    <input
+      class="search-input"
+      value="{{keyword}}"
+      placeholder="搜索实验标题或关键词"
+      bindinput="onKeywordInput"
+      confirm-type="search"
+      bindconfirm="onSearch"
+    />
+    <button class="search-button" bindtap="onSearch">搜索</button>
+  </view>
+
+  <view wx:if="{{error}}" class="notice panel">{{error}}</view>
+
+  <view wx:if="{{!loading && experiments.length === 0 && !error}}" class="empty panel">
+    暂时没有招募中的实验
+  </view>
+
+  <view class="experiment-list">
+    <view
+      wx:for="{{experiments}}"
+      wx:key="id"
+      class="experiment-card panel"
+      data-id="{{item.id}}"
+      bindtap="openDetail"
+    >
+      <view class="card-top">
+        <view class="card-title">{{item.title}}</view>
+        <view class="status status-{{item.statusClassName}}">{{item.statusText}}</view>
+      </view>
+      <view class="card-desc">{{item.description}}</view>
+      <view class="card-meta">
+        <text>{{item.timeText}}</text>
+        <text>{{item.location || '地点待定'}}</text>
+      </view>
+      <view class="card-bottom">
+        <view class="payment">{{item.paymentText}}</view>
+        <view class="risk">{{item.riskLevel || '风险待评估'}}</view>
+      </view>
+      <view wx:if="{{item.tagTexts.length}}" class="tag-row">
+        <text wx:for="{{item.tagTexts}}" wx:key="*this" class="tag">{{item}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:if="{{!hasMore && experiments.length}}" class="loading muted">已经到底了</view>
+</view>

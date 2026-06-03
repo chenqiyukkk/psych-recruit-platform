@@ -1,0 +1,32 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/experiment-detail/index",
+    "pages/profile/index",
+    "pages/notifications/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "心试通",
+    "navigationBarBackgroundColor": "#f7f3ea",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f7f3ea"
+  },
+  "tabBar": {
+    "color": "#6f6a5f",
+    "selectedColor": "#0f766e",
+    "backgroundColor": "#fffaf0",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/home/index",
+        "text": "实验"
+      },
+      {
+        "pagePath": "pages/profile/index",
+        "text": "我的"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}
