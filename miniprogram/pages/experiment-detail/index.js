@@ -7,6 +7,7 @@ Page({
     experiment: null,
     loading: true,
     applying: false,
+    applied: false,
     error: '',
   },
 
@@ -16,7 +17,7 @@ Page({
   },
 
   loadDetail(id) {
-    this.setData({ loading: true, error: '' });
+    this.setData({ loading: true, error: '', applied: false });
     api
       .getExperiment(id)
       .then((experiment) => {
@@ -44,9 +45,13 @@ Page({
     api
       .applyExperiment(this.data.id)
       .then(() => {
+        this.setData({ applied: true });
         wx.showToast({ title: '报名成功', icon: 'success' });
       })
       .catch((error) => {
+        if (error.message && error.message.indexOf('重复报名') !== -1) {
+          this.setData({ applied: true });
+        }
         wx.showToast({ title: error.message || '报名失败', icon: 'none' });
       })
       .finally(() => {

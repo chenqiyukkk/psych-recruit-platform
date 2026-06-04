@@ -3,7 +3,7 @@
   <view wx:elif="{{error}}" class="empty panel">{{error}}</view>
 
   <block wx:else>
-    <view class="detail-head panel">
+    <view class="detail-head">
       <view class="status status-{{experiment.statusClassName}}">{{experiment.statusText}}</view>
       <view class="title">{{experiment.title}}</view>
       <view class="summary">{{experiment.description}}</view>
@@ -43,8 +43,19 @@
       <view class="section-content">{{experiment.paymentDescription}}</view>
     </view>
 
-    <button class="primary-button apply-button" loading="{{applying}}" bindtap="applyExperiment">
-      立即报名
-    </button>
+    <view class="apply-bar">
+      <view>
+        <view class="apply-price">{{experiment.paymentText}}</view>
+        <view class="apply-note">提交后进入待审核</view>
+      </view>
+      <button
+        class="primary-button apply-button"
+        loading="{{applying}}"
+        disabled="{{applying || applied}}"
+        bindtap="applyExperiment"
+      >
+        {{applied ? '已提交报名' : '立即报名'}}
+      </button>
+    </view>
   </block>
 </view>

@@ -1,8 +1,8 @@
 <view class="page profile-page">
   <view wx:if="{{!token}}" class="login-panel panel">
-    <view class="login-badge">MINI PROGRAM</view>
-    <view class="login-title">微信授权登录</view>
-    <view class="login-subtitle">进入个人中心后可查看报名、通知与信誉状态。</view>
+    <view class="login-badge">心试通账号</view>
+    <view class="login-title">进入个人中心</view>
+    <view class="login-subtitle">查看报名记录、通知与信誉状态；测试阶段可直接使用测试账号。</view>
     <button class="primary-button wx-login" loading="{{wxLoginLoading}}" bindtap="loginByWechat">
       微信授权登录
     </button>
@@ -38,7 +38,7 @@
         <view class="contact">{{profile.email || '未填写邮箱'}}</view>
         <view class="contact">{{profile.phone || '未填写手机号'}}</view>
       </view>
-      <button class="ghost-button logout" bindtap="logout">退出</button>
+      <button class="logout-button" bindtap="logout">退出</button>
     </view>
 
     <view wx:if="{{profile}}" class="metrics">
@@ -61,10 +61,12 @@
     <view class="registration-list">
       <view wx:for="{{registrations}}" wx:key="id" class="registration-card panel">
         <view class="registration-top">
-          <view class="registration-title">实验 #{{item.experimentId}}</view>
+          <view class="registration-title">{{item.experimentTitle}}</view>
           <view class="status status-{{item.statusClassName}}">{{item.statusText}}</view>
         </view>
+        <view class="registration-subtitle">实验编号 #{{item.experimentId}}</view>
         <view class="registration-meta">申请时间：{{item.appliedAtText}}</view>
+        <view wx:if="{{item.experimentLocation}}" class="registration-meta">地点：{{item.experimentLocation}}</view>
         <view class="registration-meta">完成状态：{{item.isCompleted ? '已完成' : '未完成'}}</view>
       </view>
     </view>

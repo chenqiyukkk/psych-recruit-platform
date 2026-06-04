@@ -1,30 +1,34 @@
 <view class="page home-page">
   <view class="hero">
-    <view class="hero-kicker">心试通</view>
+    <view class="hero-kicker">心试通 · TEST READY</view>
     <view class="hero-title">心理学实验招募</view>
-    <view class="hero-subtitle">高校实验 / 被试报名 / 现场签到</view>
+    <view class="hero-subtitle">筛选实验、查看条件、完成报名，一条流程走到底。</view>
     <view class="hero-metrics">
       <view class="metric-chip">
         <text class="metric-number">{{total || 0}}</text>
-        <text class="metric-text">招募中</text>
+        <text class="metric-text">已发布实验</text>
       </view>
       <view class="metric-chip accent">
-        <text class="metric-number">¥</text>
-        <text class="metric-text">有偿实验</text>
+        <text class="metric-number">1</text>
+        <text class="metric-text">步报名</text>
       </view>
     </view>
   </view>
 
   <view class="search-row">
-    <input
-      class="search-input"
-      value="{{keyword}}"
-      placeholder="搜索实验标题或关键词"
-      bindinput="onKeywordInput"
-      confirm-type="search"
-      bindconfirm="onSearch"
-    />
-    <button class="search-button" bindtap="onSearch">搜索</button>
+    <view class="search-box">
+      <view class="search-icon"></view>
+      <input
+        class="search-input"
+        value="{{keyword}}"
+        placeholder="搜索实验标题或关键词"
+        bindinput="onKeywordInput"
+        confirm-type="search"
+        bindconfirm="onSearch"
+      />
+      <button wx:if="{{keyword}}" class="clear-button" bindtap="onClearSearch">清除</button>
+    </view>
+    <button class="search-button" bindtap="onSearch">筛选</button>
   </view>
 
   <view wx:if="{{error}}" class="notice panel">{{error}}</view>
@@ -47,11 +51,20 @@
       </view>
       <view class="card-desc">{{item.description}}</view>
       <view class="card-meta">
-        <text>时间 {{item.timeText}}</text>
-        <text>地点 {{item.location || '地点待定'}}</text>
+        <view class="meta-item">
+          <text class="meta-label">时间</text>
+          <text class="meta-text">{{item.timeText}}</text>
+        </view>
+        <view class="meta-item">
+          <text class="meta-label">地点</text>
+          <text class="meta-text">{{item.location || '地点待定'}}</text>
+        </view>
       </view>
       <view class="card-bottom">
-        <view class="payment">{{item.paymentText}}</view>
+        <view>
+          <view class="payment">{{item.paymentText}}</view>
+          <view class="payment-note">实验报酬</view>
+        </view>
         <view class="risk">{{item.riskLevel || '风险待评估'}}</view>
       </view>
       <view wx:if="{{item.tagTexts.length}}" class="tag-row">
@@ -61,5 +74,7 @@
   </view>
 
   <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:if="{{loadingMore}}" class="loading">继续加载...</view>
+  <view wx:if="{{loadMoreError}}" class="loading error-text">{{loadMoreError}}</view>
   <view wx:if="{{!hasMore && experiments.length}}" class="loading muted">已经到底了</view>
 </view>

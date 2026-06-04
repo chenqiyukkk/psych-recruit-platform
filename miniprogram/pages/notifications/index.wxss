@@ -6,6 +6,7 @@
 }
 
 .title {
+  color: #151c1a;
   font-size: 38rpx;
   font-weight: 800;
 }
@@ -33,33 +34,34 @@
 
 .notification-title {
   flex: 1;
+  color: #151c1a;
   font-size: 30rpx;
-  font-weight: 750;
+  font-weight: 800;
 }
 
 .unread-dot {
   width: 14rpx;
   height: 14rpx;
   border-radius: 50%;
-  background: #0b7a6d;
+  background: #075e56;
 }
 
 .notification-content {
   margin-top: 14rpx;
-  color: #4f5d59;
+  color: #4d5854;
   font-size: 26rpx;
   line-height: 1.6;
 }
 
 .notification-time {
   margin-top: 14rpx;
-  color: #6d7b75;
+  color: #7c827d;
   font-size: 23rpx;
 }
 
 .loading {
   padding: 30rpx 0;
   text-align: center;
-  color: #6d7b75;
+  color: #68736f;
   font-size: 26rpx;
 }

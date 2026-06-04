@@ -4,6 +4,8 @@ import com.project.common.api.Result;
 import com.project.user.dto.AuthLoginRequest;
 import com.project.user.dto.AuthLoginResponse;
 import com.project.user.dto.AuthRegisterRequest;
+import com.project.user.dto.WxLoginRequest;
+import com.project.user.dto.WxLoginResponse;
 import com.project.user.service.UserService;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,11 @@ public class AuthController {
   @PostMapping("/login")
   public Result<AuthLoginResponse> login(@Valid @RequestBody AuthLoginRequest request) {
     return Result.success(userService.login(request));
+  }
+
+  @PostMapping("/wx-login")
+  public Result<WxLoginResponse> wxLogin(@Valid @RequestBody WxLoginRequest request) {
+    return Result.success(userService.wxLogin(request));
   }
 
   @PostMapping("/logout")

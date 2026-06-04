@@ -19,3 +19,7 @@ app:
   jwt:
     secret: test-jwt-secret-test-jwt-secret-test-jwt-secret
     expiration-ms: 86400000
+
+wechat:
+  miniapp:
+    mock-enabled: true

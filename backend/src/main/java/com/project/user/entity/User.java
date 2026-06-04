@@ -33,6 +33,9 @@ public class User {
   @Column(length = 128)
   private String email;
 
+  @Column(name = "wechat_openid", length = 128, unique = true)
+  private String wechatOpenid;
+
   @Column(nullable = false, length = 16)
   private String role;
 
