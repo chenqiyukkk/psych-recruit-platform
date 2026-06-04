@@ -35,6 +35,11 @@ Page({
       return;
     }
 
+    if (!getApp().getToken()) {
+      wx.switchTab({ url: '/pages/profile/index' });
+      return;
+    }
+
     this.setData({ applying: true });
     api
       .applyExperiment(this.data.id)

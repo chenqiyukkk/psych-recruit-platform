@@ -1,56 +1,88 @@
 .home-page {
-  padding-top: 24rpx;
+  padding-top: 22rpx;
 }
 
 .hero {
-  padding: 32rpx;
-  background: linear-gradient(135deg, #fffaf0 0%, #e8f2ef 100%);
+  padding: 36rpx 34rpx 32rpx;
+  border-radius: 18rpx;
+  background: linear-gradient(145deg, #103c36 0%, #0b7a6d 64%, #e9b44c 160%);
+  color: #ffffff;
+  box-shadow: 0 22rpx 48rpx rgba(12, 68, 61, 0.22);
 }
 
 .hero-kicker {
-  color: #9a6a1d;
+  color: #f7d98c;
   font-size: 24rpx;
   font-weight: 700;
 }
 
 .hero-title {
-  margin-top: 12rpx;
-  font-size: 42rpx;
+  margin-top: 14rpx;
+  font-size: 48rpx;
   font-weight: 800;
   line-height: 1.25;
 }
 
 .hero-subtitle {
   margin-top: 16rpx;
-  color: #6f6a5f;
+  color: rgba(255, 255, 255, 0.76);
   font-size: 26rpx;
   line-height: 1.6;
+}
+
+.hero-metrics {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+
+.metric-chip {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  padding: 12rpx 18rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.28);
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.metric-chip.accent {
+  background: rgba(233, 180, 76, 0.18);
+}
+
+.metric-number {
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.metric-text {
+  font-size: 22rpx;
 }
 
 .search-row {
   display: flex;
   gap: 16rpx;
-  margin: 28rpx 0;
+  margin: 30rpx 0 26rpx;
 }
 
 .search-input {
   flex: 1;
-  height: 78rpx;
+  height: 82rpx;
   padding: 0 24rpx;
-  background: #fffaf0;
-  border: 1rpx solid #e2d7c3;
-  border-radius: 8rpx;
+  background: #ffffff;
+  border: 1rpx solid #dbe7df;
+  border-radius: 12rpx;
   font-size: 28rpx;
 }
 
 .search-button {
   width: 132rpx;
-  height: 78rpx;
-  border-radius: 8rpx;
-  background: #24211c;
-  color: #fffaf0;
+  height: 82rpx;
+  border-radius: 12rpx;
+  background: #17211f;
+  color: #ffffff;
   font-size: 28rpx;
-  line-height: 78rpx;
+  line-height: 82rpx;
 }
 
 .notice {
@@ -63,11 +95,11 @@
 .experiment-list {
   display: flex;
   flex-direction: column;
-  gap: 22rpx;
+  gap: 24rpx;
 }
 
 .experiment-card {
-  padding: 28rpx;
+  padding: 30rpx;
 }
 
 .card-top,
@@ -85,21 +117,21 @@
 
 .card-title {
   flex: 1;
-  font-size: 32rpx;
+  font-size: 34rpx;
   font-weight: 750;
   line-height: 1.35;
 }
 
 .status {
   flex-shrink: 0;
-  padding: 8rpx 14rpx;
-  border-radius: 8rpx;
+  padding: 8rpx 16rpx;
+  border-radius: 10rpx;
   font-size: 22rpx;
 }
 
 .status-success {
-  background: #dff2ed;
-  color: #0f766e;
+  background: #dcefeb;
+  color: #0b7a6d;
 }
 
 .status-danger {
@@ -114,7 +146,7 @@
 
 .card-desc {
   margin-top: 18rpx;
-  color: #5d574d;
+  color: #4f5d59;
   font-size: 26rpx;
   line-height: 1.55;
 }
@@ -124,7 +156,7 @@
   align-items: flex-start;
   gap: 8rpx;
   margin-top: 18rpx;
-  color: #797166;
+  color: #6d7b75;
   font-size: 24rpx;
 }
 
@@ -134,13 +166,13 @@
 }
 
 .payment {
-  color: #9a6a1d;
+  color: #c47f1e;
   font-size: 34rpx;
   font-weight: 800;
 }
 
 .risk {
-  color: #0f766e;
+  color: #0b7a6d;
   font-size: 24rpx;
 }
 
@@ -152,9 +184,9 @@
 
 .tag {
   padding: 6rpx 12rpx;
-  background: #f1eadf;
-  border-radius: 8rpx;
-  color: #5d574d;
+  background: #edf4f0;
+  border-radius: 10rpx;
+  color: #4f5d59;
   font-size: 22rpx;
 }
 

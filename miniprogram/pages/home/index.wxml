@@ -1,8 +1,18 @@
 <view class="page home-page">
-  <view class="hero panel">
+  <view class="hero">
     <view class="hero-kicker">心试通</view>
-    <view class="hero-title">发现适合你的心理学实验</view>
-    <view class="hero-subtitle">查看招募时间、地点、报酬与筛选条件，快速完成报名。</view>
+    <view class="hero-title">心理学实验招募</view>
+    <view class="hero-subtitle">高校实验 / 被试报名 / 现场签到</view>
+    <view class="hero-metrics">
+      <view class="metric-chip">
+        <text class="metric-number">{{total || 0}}</text>
+        <text class="metric-text">招募中</text>
+      </view>
+      <view class="metric-chip accent">
+        <text class="metric-number">¥</text>
+        <text class="metric-text">有偿实验</text>
+      </view>
+    </view>
   </view>
 
   <view class="search-row">
@@ -37,8 +47,8 @@
       </view>
       <view class="card-desc">{{item.description}}</view>
       <view class="card-meta">
-        <text>{{item.timeText}}</text>
-        <text>{{item.location || '地点待定'}}</text>
+        <text>时间 {{item.timeText}}</text>
+        <text>地点 {{item.location || '地点待定'}}</text>
       </view>
       <view class="card-bottom">
         <view class="payment">{{item.paymentText}}</view>

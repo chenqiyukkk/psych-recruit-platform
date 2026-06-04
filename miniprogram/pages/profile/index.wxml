@@ -1,20 +1,31 @@
 <view class="page profile-page">
   <view wx:if="{{!token}}" class="login-panel panel">
-    <view class="login-title">登录心试通</view>
-    <input
-      class="form-input"
-      value="{{username}}"
-      placeholder="用户名"
-      bindinput="onUsernameInput"
-    />
-    <input
-      class="form-input"
-      value="{{password}}"
-      password
-      placeholder="密码"
-      bindinput="onPasswordInput"
-    />
-    <button class="primary-button" loading="{{loginLoading}}" bindtap="login">登录</button>
+    <view class="login-badge">MINI PROGRAM</view>
+    <view class="login-title">微信授权登录</view>
+    <view class="login-subtitle">进入个人中心后可查看报名、通知与信誉状态。</view>
+    <button class="primary-button wx-login" loading="{{wxLoginLoading}}" bindtap="loginByWechat">
+      微信授权登录
+    </button>
+    <button class="ghost-button dev-login-toggle" bindtap="toggleDevLogin">
+      测试账号登录
+    </button>
+
+    <view wx:if="{{showDevLogin}}" class="dev-login-box">
+      <input
+        class="form-input"
+        value="{{username}}"
+        placeholder="测试用户名"
+        bindinput="onUsernameInput"
+      />
+      <input
+        class="form-input"
+        value="{{password}}"
+        password
+        placeholder="测试密码"
+        bindinput="onPasswordInput"
+      />
+      <button class="ghost-button" loading="{{loginLoading}}" bindtap="login">使用测试账号进入</button>
+    </view>
   </view>
 
   <block wx:else>
@@ -24,7 +35,8 @@
       <view>
         <view class="role">{{profile.role}}</view>
         <view class="name">{{profile.username}}</view>
-        <view class="contact">{{profile.email || '未填写邮箱'}} / {{profile.phone || '未填写手机号'}}</view>
+        <view class="contact">{{profile.email || '未填写邮箱'}}</view>
+        <view class="contact">{{profile.phone || '未填写手机号'}}</view>
       </view>
       <button class="ghost-button logout" bindtap="logout">退出</button>
     </view>
