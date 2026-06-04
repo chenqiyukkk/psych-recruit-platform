@@ -7,7 +7,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/psych_recruit_platform?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: root
-    password: root
+    password: 123456
   jpa:
     hibernate:
       ddl-auto: validate
@@ -21,6 +21,13 @@ app:
     # 需要至少 32 字符，HS256 才安全且可用
     secret: ${APP_JWT_SECRET:please-change-this-jwt-secret-to-32-chars-minimum}
     expiration-ms: 86400000
+
+wechat:
+  miniapp:
+    app-id: ${WECHAT_MINIAPP_APP_ID:}
+    app-secret: ${WECHAT_MINIAPP_APP_SECRET:}
+    mock-enabled: ${WECHAT_MINIAPP_MOCK_ENABLED:false}
+    mock-openid-prefix: ${WECHAT_MINIAPP_MOCK_OPENID_PREFIX:mock_openid_}
 
 springdoc:
   api-docs:

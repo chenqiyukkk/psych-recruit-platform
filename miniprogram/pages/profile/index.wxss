@@ -1,30 +1,33 @@
 .login-panel {
-  padding: 42rpx 34rpx;
-  background: linear-gradient(180deg, #ffffff 0%, #edf6f2 100%);
+  padding: 46rpx 36rpx;
+  background:
+    linear-gradient(180deg, rgba(255, 253, 247, 0.98) 0%, rgba(234, 244, 239, 0.98) 100%),
+    #fffdf7;
 }
 
 .login-badge {
   display: inline-block;
-  padding: 8rpx 14rpx;
-  border-radius: 10rpx;
-  background: #e6f0ec;
-  color: #0b7a6d;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: #e0eee9;
+  color: #075e56;
   font-size: 22rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .login-title {
-  margin-top: 24rpx;
-  font-size: 46rpx;
+  margin-top: 26rpx;
+  color: #151c1a;
+  font-size: 48rpx;
   font-weight: 800;
   line-height: 1.25;
 }
 
 .login-subtitle {
   margin-top: 16rpx;
-  color: #6d7b75;
+  color: #68736f;
   font-size: 26rpx;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .wx-login {
@@ -36,80 +39,97 @@
 }
 
 .dev-login-box {
-  margin-top: 24rpx;
-  padding-top: 24rpx;
-  border-top: 1rpx solid #dbe7df;
+  margin-top: 26rpx;
+  padding-top: 26rpx;
+  border-top: 1rpx solid #e3dacb;
 }
 
 .form-input {
-  height: 82rpx;
+  height: 88rpx;
   margin-bottom: 18rpx;
-  padding: 0 22rpx;
-  background: #ffffff;
-  border: 1rpx solid #dbe7df;
-  border-radius: 12rpx;
+  padding: 0 24rpx;
+  background: #fffdf7;
+  border: 1rpx solid #e3dacb;
+  border-radius: 16rpx;
   font-size: 28rpx;
 }
 
 .profile-head {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 20rpx;
-  padding: 34rpx;
-  background: linear-gradient(135deg, #ffffff 0%, #e8f5f1 100%);
+  padding: 36rpx;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 247, 0.98) 0%, rgba(224, 238, 233, 0.98) 100%),
+    #fffdf7;
 }
 
 .role {
-  color: #0b7a6d;
+  color: #075e56;
   font-size: 24rpx;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .name {
   margin-top: 8rpx;
+  color: #151c1a;
   font-size: 42rpx;
   font-weight: 800;
+  line-height: 1.25;
 }
 
 .contact {
   margin-top: 10rpx;
-  color: #6d7b75;
+  color: #68736f;
   font-size: 24rpx;
   line-height: 1.5;
 }
 
-.logout {
-  width: 120rpx;
+.logout-button {
   flex-shrink: 0;
+  width: 104rpx;
+  height: 56rpx;
+  padding: 0;
+  border: 1rpx solid #d8cfc0;
+  border-radius: 999rpx;
+  background: #fffdf7;
+  color: #70685c;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 56rpx;
 }
 
 .metrics {
   display: flex;
   justify-content: space-between;
+  gap: 16rpx;
   margin-top: 22rpx;
 }
 
 .metric {
-  width: 214rpx;
+  flex: 1;
+  min-width: 0;
   min-height: 138rpx;
   padding: 22rpx 12rpx;
   text-align: center;
 }
 
 .metric-value {
-  color: #c47f1e;
+  color: #b27d2d;
   font-size: 38rpx;
   font-weight: 800;
 }
 
 .metric-label {
   margin-top: 8rpx;
-  color: #6d7b75;
+  color: #68736f;
   font-size: 22rpx;
 }
 
 .section-title {
   margin: 34rpx 0 18rpx;
+  color: #151c1a;
   font-size: 32rpx;
   font-weight: 800;
 }
@@ -121,57 +141,42 @@
 }
 
 .registration-card {
-  padding: 26rpx;
+  padding: 28rpx;
 }
 
 .registration-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 14rpx;
 }
 
 .registration-title {
+  flex: 1;
+  min-width: 0;
+  color: #151c1a;
   font-size: 30rpx;
-  font-weight: 750;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.registration-subtitle {
+  margin-top: 10rpx;
+  color: #9a6516;
+  font-size: 23rpx;
+  font-weight: 700;
 }
 
 .registration-meta {
   margin-top: 12rpx;
-  color: #6d7b75;
+  color: #68736f;
   font-size: 24rpx;
-}
-
-.status {
-  flex-shrink: 0;
-  padding: 8rpx 14rpx;
-  border-radius: 8rpx;
-  font-size: 22rpx;
-}
-
-.status-success {
-  background: #dcefeb;
-  color: #0b7a6d;
-}
-
-.status-warning {
-  background: #fff0c2;
-  color: #c47f1e;
-}
-
-.status-danger {
-  background: #f8d9d3;
-  color: #9f2d2d;
-}
-
-.status-muted {
-  background: #ece5d8;
-  color: #6f6a5f;
+  line-height: 1.45;
 }
 
 .loading {
   padding: 30rpx 0;
   text-align: center;
-  color: #6d7b75;
+  color: #68736f;
   font-size: 26rpx;
 }

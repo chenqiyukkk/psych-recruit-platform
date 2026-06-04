@@ -19,6 +19,7 @@ backend/target/
 frontend/node_modules/
 frontend/dist/
 miniprogram/node_modules/
+miniprogram/project.private.config.json
 
 # Env
 .env

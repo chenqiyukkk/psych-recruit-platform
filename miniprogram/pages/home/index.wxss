@@ -1,31 +1,38 @@
 .home-page {
-  padding-top: 22rpx;
+  padding-top: 18rpx;
 }
 
 .hero {
-  padding: 36rpx 34rpx 32rpx;
-  border-radius: 18rpx;
-  background: linear-gradient(145deg, #103c36 0%, #0b7a6d 64%, #e9b44c 160%);
+  position: relative;
+  overflow: hidden;
+  padding: 44rpx 36rpx 36rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 24rpx;
+  background:
+    linear-gradient(135deg, rgba(11, 61, 55, 0.94) 0%, rgba(7, 94, 86, 0.94) 58%, rgba(178, 125, 45, 0.92) 150%),
+    #075e56;
   color: #ffffff;
-  box-shadow: 0 22rpx 48rpx rgba(12, 68, 61, 0.22);
+  box-shadow: 0 24rpx 54rpx rgba(42, 36, 22, 0.18);
 }
 
 .hero-kicker {
   color: #f7d98c;
-  font-size: 24rpx;
+  font-size: 22rpx;
   font-weight: 700;
 }
 
 .hero-title {
-  margin-top: 14rpx;
-  font-size: 48rpx;
+  margin-top: 16rpx;
+  font-size: 50rpx;
   font-weight: 800;
   line-height: 1.25;
 }
 
 .hero-subtitle {
+  width: 560rpx;
+  max-width: 100%;
   margin-top: 16rpx;
-  color: rgba(255, 255, 255, 0.76);
+  color: rgba(255, 255, 255, 0.78);
   font-size: 26rpx;
   line-height: 1.6;
 }
@@ -40,9 +47,9 @@
   display: flex;
   align-items: baseline;
   gap: 8rpx;
-  padding: 12rpx 18rpx;
+  padding: 14rpx 18rpx;
   border: 1rpx solid rgba(255, 255, 255, 0.28);
-  border-radius: 12rpx;
+  border-radius: 999rpx;
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -62,27 +69,57 @@
 .search-row {
   display: flex;
   gap: 16rpx;
-  margin: 30rpx 0 26rpx;
+  margin: 30rpx 0 24rpx;
+}
+
+.search-box {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  height: 88rpx;
+  padding: 0 20rpx;
+  background: #fffdf7;
+  border: 1rpx solid #e3dacb;
+  border-radius: 18rpx;
+  box-shadow: 0 12rpx 24rpx rgba(53, 43, 28, 0.06);
+}
+
+.search-icon {
+  width: 22rpx;
+  height: 22rpx;
+  margin-right: 16rpx;
+  border: 4rpx solid #8e9a95;
+  border-radius: 50%;
 }
 
 .search-input {
   flex: 1;
-  height: 82rpx;
-  padding: 0 24rpx;
-  background: #ffffff;
-  border: 1rpx solid #dbe7df;
-  border-radius: 12rpx;
+  min-width: 0;
+  height: 88rpx;
   font-size: 28rpx;
+}
+
+.clear-button {
+  width: 84rpx;
+  height: 54rpx;
+  padding: 0;
+  border-radius: 999rpx;
+  background: #efe8db;
+  color: #70685c;
+  font-size: 22rpx;
+  line-height: 54rpx;
 }
 
 .search-button {
   width: 132rpx;
-  height: 82rpx;
-  border-radius: 12rpx;
-  background: #17211f;
+  height: 88rpx;
+  border-radius: 18rpx;
+  background: #151c1a;
   color: #ffffff;
   font-size: 28rpx;
-  line-height: 82rpx;
+  font-weight: 700;
+  line-height: 88rpx;
 }
 
 .notice {
@@ -95,10 +132,12 @@
 .experiment-list {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 22rpx;
 }
 
 .experiment-card {
+  position: relative;
+  overflow: hidden;
   padding: 30rpx;
 }
 
@@ -117,36 +156,15 @@
 
 .card-title {
   flex: 1;
+  min-width: 0;
   font-size: 34rpx;
   font-weight: 750;
   line-height: 1.35;
 }
 
-.status {
-  flex-shrink: 0;
-  padding: 8rpx 16rpx;
-  border-radius: 10rpx;
-  font-size: 22rpx;
-}
-
-.status-success {
-  background: #dcefeb;
-  color: #0b7a6d;
-}
-
-.status-danger {
-  background: #f8d9d3;
-  color: #9f2d2d;
-}
-
-.status-muted {
-  background: #ece5d8;
-  color: #6f6a5f;
-}
-
 .card-desc {
   margin-top: 18rpx;
-  color: #4f5d59;
+  color: #4d5854;
   font-size: 26rpx;
   line-height: 1.55;
 }
@@ -154,26 +172,55 @@
 .card-meta {
   flex-direction: column;
   align-items: flex-start;
-  gap: 8rpx;
+  gap: 10rpx;
   margin-top: 18rpx;
-  color: #6d7b75;
+  color: #68736f;
   font-size: 24rpx;
+}
+
+.meta-item {
+  display: flex;
+  width: 100%;
+  gap: 14rpx;
+  line-height: 1.45;
+}
+
+.meta-label {
+  flex-shrink: 0;
+  width: 56rpx;
+  color: #9a6516;
+  font-weight: 700;
+}
+
+.meta-text {
+  flex: 1;
 }
 
 .card-bottom {
   justify-content: space-between;
+  align-items: flex-end;
   margin-top: 22rpx;
 }
 
 .payment {
-  color: #c47f1e;
+  color: #b27d2d;
   font-size: 34rpx;
   font-weight: 800;
 }
 
+.payment-note {
+  margin-top: 2rpx;
+  color: #8c8478;
+  font-size: 22rpx;
+}
+
 .risk {
-  color: #0b7a6d;
+  padding: 10rpx 14rpx;
+  border-radius: 999rpx;
+  background: #edf4f0;
+  color: #075e56;
   font-size: 24rpx;
+  font-weight: 700;
 }
 
 .tag-row {
@@ -183,9 +230,9 @@
 }
 
 .tag {
-  padding: 6rpx 12rpx;
-  background: #edf4f0;
-  border-radius: 10rpx;
+  padding: 7rpx 14rpx;
+  background: #f1eadf;
+  border-radius: 999rpx;
   color: #4f5d59;
   font-size: 22rpx;
 }
@@ -194,4 +241,8 @@
   padding: 30rpx 0;
   text-align: center;
   font-size: 26rpx;
+}
+
+.error-text {
+  color: #9f2d2d;
 }

@@ -8,13 +8,18 @@ import com.project.user.dto.AuthLoginResponse;
 import com.project.user.dto.AuthRegisterRequest;
 import com.project.user.dto.UserProfileResponse;
 import com.project.user.dto.UserProfileUpdateRequest;
+import com.project.user.dto.WxLoginRequest;
+import com.project.user.dto.WxLoginResponse;
 import com.project.user.entity.User;
 import com.project.user.repo.UserRepository;
+import com.project.user.wechat.WechatMiniAppClient;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +28,7 @@ public class UserService {
   private final UserRepository userRepository;
   private final PasswordEncoder passwordEncoder;
   private final JwtUtil jwtUtil;
+  private final WechatMiniAppClient wechatMiniAppClient;
 
   @Transactional
   public void register(AuthRegisterRequest request) {
@@ -58,6 +64,20 @@ public class UserService {
     return new AuthLoginResponse(token);
   }
 
+  @Transactional
+  public WxLoginResponse wxLogin(WxLoginRequest request) {
+    if (request == null || !StringUtils.hasText(request.getCode())) {
+      throw new ApiException(400, "微信登录 code 不能为空");
+    }
+    String openid = wechatMiniAppClient.getOpenid(request.getCode().trim());
+    User user =
+        userRepository
+            .findByWechatOpenid(openid)
+            .orElseGet(() -> createWechatSubject(openid));
+    String token = jwtUtil.generateToken(user.getUsername(), user.getRole());
+    return new WxLoginResponse(token, toProfile(user));
+  }
+
   public UserProfileResponse getProfile(String username) {
     User user =
         userRepository
@@ -86,6 +106,33 @@ public class UserService {
       return 0.0;
     }
     return user.getResearcherRating().doubleValue();
+  }
+
+  private User createWechatSubject(String openid) {
+    User user = new User();
+    user.setWechatOpenid(openid);
+    user.setUsername(generateWechatUsername(openid));
+    user.setPassword(passwordEncoder.encode("WECHAT_LOGIN_ONLY:" + UUID.randomUUID()));
+    user.setRole(UserRoles.SUBJECT);
+    user.setReputationScore(100);
+    user.setTotalReviews(0);
+    user.setCreatedAt(LocalDateTime.now());
+    return userRepository.save(user);
+  }
+
+  private String generateWechatUsername(String openid) {
+    String normalized = openid.replaceAll("[^A-Za-z0-9]", "");
+    String suffix =
+        normalized.length() > 8 ? normalized.substring(normalized.length() - 8) : normalized;
+    if (!StringUtils.hasText(suffix)) {
+      suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+    String username = "wx_" + suffix;
+    if (!userRepository.existsByUsername(username)) {
+      return username;
+    }
+    String randomSuffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    return "wx_" + randomSuffix;
   }
 
   private static UserProfileResponse toProfile(User user) {

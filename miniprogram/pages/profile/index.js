@@ -17,6 +17,9 @@ Page({
   },
 
   onShow() {
+    if (typeof this.getTabBar === 'function' && this.getTabBar()) {
+      this.getTabBar().setData({ selected: 1 });
+    }
     const app = getApp();
     this.setData({ token: app.getToken() });
     if (this.data.token) {
@@ -129,10 +132,12 @@ Page({
     this.setData({ loading: true, error: '' });
     return Promise.all([api.getProfile(), api.getRegistrations(), api.getUnreadCount()])
       .then(([profile, registrations, unreadCount]) => {
-        this.setData({
-          profile,
-          registrations: registrations.map(formatRegistration),
-          unreadCount,
+        return this.enrichRegistrations(registrations).then((items) => {
+          this.setData({
+            profile,
+            registrations: items,
+            unreadCount,
+          });
         });
       })
       .catch((error) => {
@@ -145,5 +150,40 @@ Page({
 
   openNotifications() {
     wx.navigateTo({ url: '/pages/notifications/index' });
+  },
+
+  enrichRegistrations(registrations) {
+    const list = Array.isArray(registrations) ? registrations : [];
+    const formatted = list.map(formatRegistration);
+    const ids = Array.from(new Set(formatted.map((item) => item.experimentId).filter(Boolean)));
+
+    if (!ids.length) {
+      return Promise.resolve(formatted);
+    }
+
+    return Promise.all(
+      ids.map((id) =>
+        api
+          .getExperiment(id)
+          .then((experiment) => [id, experiment])
+          .catch(() => [id, null])
+      )
+    ).then((pairs) => {
+      const experimentMap = pairs.reduce((map, pair) => {
+        const [id, experiment] = pair;
+        if (experiment) {
+          map[id] = experiment;
+        }
+        return map;
+      }, {});
+
+      return formatted.map((item) => {
+        const experiment = experimentMap[item.experimentId];
+        return Object.assign({}, item, {
+          experimentTitle: experiment ? experiment.title : `实验 #${item.experimentId}`,
+          experimentLocation: experiment ? experiment.location : '',
+        });
+      });
+    });
   },
 });

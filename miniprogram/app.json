@@ -7,23 +7,24 @@
   ],
   "window": {
     "navigationBarTitleText": "心试通",
-    "navigationBarBackgroundColor": "#f7f3ea",
+    "navigationBarBackgroundColor": "#f6f1e8",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f7f3ea"
+    "backgroundColor": "#f6f1e8"
   },
   "tabBar": {
-    "color": "#6f6a5f",
-    "selectedColor": "#0f766e",
-    "backgroundColor": "#fffaf0",
+    "custom": true,
+    "color": "#7c827d",
+    "selectedColor": "#075e56",
+    "backgroundColor": "#fffdf7",
     "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/home/index",
-        "text": "实验"
+        "text": "招募"
       },
       {
         "pagePath": "pages/profile/index",
-        "text": "我的"
+        "text": "个人"
       }
     ]
   },

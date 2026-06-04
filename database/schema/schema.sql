@@ -17,13 +17,15 @@ CREATE TABLE users (
   password VARCHAR(255) NOT NULL COMMENT '密码（BCrypt哈希）',
   phone VARCHAR(32) DEFAULT NULL COMMENT '手机号',
   email VARCHAR(128) DEFAULT NULL COMMENT '邮箱',
-  role ENUM('被试','研究者','管理员') NOT NULL COMMENT '角色：被试/研究者/管理员',
+  wechat_openid VARCHAR(128) DEFAULT NULL COMMENT '微信小程序 openid',
+  role VARCHAR(16) NOT NULL COMMENT '角色：被试/研究者/管理员',
   reputation_score INT NOT NULL DEFAULT 100 COMMENT '信誉分（默认100）',
   researcher_rating DECIMAL(3,2) DEFAULT NULL COMMENT '研究者平均评分（缓存字段）',
   total_reviews INT NOT NULL DEFAULT 0 COMMENT '被评价次数（缓存字段）',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (id),
   UNIQUE KEY uk_users_username (username),
+  UNIQUE KEY uk_users_wechat_openid (wechat_openid),
   KEY idx_users_role (role),
   KEY idx_users_phone (phone),
   KEY idx_users_email (email)
@@ -64,13 +66,13 @@ CREATE TABLE experiments (
   start_time DATETIME NOT NULL COMMENT '开始时间',
   end_time DATETIME NOT NULL COMMENT '结束时间',
   ethics_approval_no VARCHAR(128) DEFAULT NULL COMMENT '伦理审批编号',
-  risk_level ENUM('LOW','MEDIUM','HIGH') NOT NULL DEFAULT 'LOW' COMMENT '风险等级',
+  risk_level VARCHAR(16) NOT NULL DEFAULT 'LOW' COMMENT '风险等级',
   payment_amount DECIMAL(10,2) NOT NULL DEFAULT 0.00 COMMENT '报酬金额',
-  payment_method ENUM('OFFLINE','ONLINE') NOT NULL DEFAULT 'OFFLINE' COMMENT '报酬方式：线下/线上（当前以线下为主）',
+  payment_method VARCHAR(16) NOT NULL DEFAULT 'OFFLINE' COMMENT '报酬方式：线下/线上（当前以线下为主）',
   payment_description VARCHAR(255) DEFAULT NULL COMMENT '报酬说明',
   screening_criteria JSON DEFAULT NULL COMMENT '筛选条件（JSON）',
   exclude_tags JSON DEFAULT NULL COMMENT '互斥标签（JSON）',
-  status ENUM('DRAFT','PUBLISHED','RECRUITING','FULL','ONGOING','COMPLETED') NOT NULL DEFAULT 'DRAFT' COMMENT '实验状态',
+  status VARCHAR(16) NOT NULL DEFAULT 'DRAFT' COMMENT '实验状态',
   organizer_id BIGINT UNSIGNED NOT NULL COMMENT '组织者（研究者）ID',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -108,7 +110,7 @@ CREATE TABLE registrations (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   experiment_id BIGINT UNSIGNED NOT NULL COMMENT '实验ID',
   user_id BIGINT UNSIGNED NOT NULL COMMENT '报名用户ID（被试）',
-  status ENUM('PENDING','APPROVED','REJECTED','CANCELLED') NOT NULL DEFAULT 'PENDING' COMMENT '报名状态',
+  status VARCHAR(16) NOT NULL DEFAULT 'PENDING' COMMENT '报名状态',
   applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '报名时间',
   reviewed_at DATETIME DEFAULT NULL COMMENT '审核时间',
   sign_in_time DATETIME DEFAULT NULL COMMENT '签到时间',
@@ -155,7 +157,7 @@ DROP TABLE IF EXISTS payment_codes;
 CREATE TABLE payment_codes (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   user_id BIGINT UNSIGNED NOT NULL COMMENT '用户ID',
-  payment_type ENUM('WECHAT','ALIPAY') NOT NULL COMMENT '收款类型',
+  payment_type VARCHAR(16) NOT NULL COMMENT '收款类型',
   qr_code_url VARCHAR(1024) NOT NULL COMMENT '收款码图片URL/路径',
   is_default TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否默认收款码',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -180,7 +182,7 @@ CREATE TABLE payment_records (
   payment_screenshot_url VARCHAR(1024) DEFAULT NULL COMMENT '支付凭证截图URL/路径',
   payer_confirmed_at DATETIME DEFAULT NULL COMMENT '付款方确认时间',
   payee_confirmed_at DATETIME DEFAULT NULL COMMENT '收款方确认时间',
-  status ENUM('PENDING','PAID','CONFIRMED','DISPUTED') NOT NULL DEFAULT 'PENDING' COMMENT '支付状态',
+  status VARCHAR(16) NOT NULL DEFAULT 'PENDING' COMMENT '支付状态',
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   PRIMARY KEY (id),
   UNIQUE KEY uk_payment_records_registration (registration_id),
@@ -207,7 +209,7 @@ CREATE TABLE reviews (
   registration_id BIGINT UNSIGNED NOT NULL COMMENT '报名记录ID',
   reviewer_id BIGINT UNSIGNED NOT NULL COMMENT '评价人ID',
   reviewed_id BIGINT UNSIGNED NOT NULL COMMENT '被评价人ID',
-  review_type ENUM('SUBJECT_TO_RESEARCHER','RESEARCHER_TO_SUBJECT') NOT NULL COMMENT '评价方向',
+  review_type VARCHAR(255) NOT NULL COMMENT '评价方向',
   rating INT NOT NULL COMMENT '总体评分（1-5）',
   communication_score INT DEFAULT NULL COMMENT '沟通评分（1-5）',
   professionalism_score INT DEFAULT NULL COMMENT '专业评分（1-5）',
@@ -238,11 +240,11 @@ DROP TABLE IF EXISTS appeals;
 CREATE TABLE appeals (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   appellant_id BIGINT UNSIGNED NOT NULL COMMENT '申诉人ID',
-  appeal_type ENUM('REPUTATION_DEDUCTION','LOW_RATING','PAYMENT_DISPUTE') NOT NULL COMMENT '申诉类型',
+  appeal_type VARCHAR(32) NOT NULL COMMENT '申诉类型',
   target_id BIGINT UNSIGNED NOT NULL COMMENT '关联记录ID（如 reputation_logs/payment_records/reviews 的 id）',
   reason TEXT NOT NULL COMMENT '申诉理由',
-  evidence_urls JSON DEFAULT NULL COMMENT '证据URL列表（JSON）',
-  status ENUM('PENDING','UNDER_REVIEW','APPROVED','REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT '申诉状态',
+  evidence_urls TEXT DEFAULT NULL COMMENT '证据URL列表（JSON）',
+  status VARCHAR(16) NOT NULL DEFAULT 'PENDING' COMMENT '申诉状态',
   reviewer_id BIGINT UNSIGNED DEFAULT NULL COMMENT '审核人（管理员）ID',
   review_comment TEXT DEFAULT NULL COMMENT '审核意见',
   reviewed_at DATETIME DEFAULT NULL COMMENT '审核时间',
@@ -305,22 +307,16 @@ CREATE TABLE notifications (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统通知表';
 
 -- =========================
--- 13) configs 系统配置
+-- 13) sys_config 系统配置
 -- =========================
-DROP TABLE IF EXISTS configs;
-CREATE TABLE configs (
+DROP TABLE IF EXISTS sys_config;
+CREATE TABLE sys_config (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键ID',
   config_key VARCHAR(100) NOT NULL COMMENT '配置键（唯一）',
-  config_value JSON NOT NULL COMMENT '配置值（JSON）',
+  config_value TEXT NOT NULL COMMENT '配置值',
   description VARCHAR(255) DEFAULT NULL COMMENT '配置说明',
-  category VARCHAR(50) DEFAULT NULL COMMENT '配置分类（EXPERIMENT/LOCATION/TAG/SYSTEM）',
-  is_enabled TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否启用（0禁用/1启用）',
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (id),
-  UNIQUE KEY uk_configs_key (config_key),
-  KEY idx_configs_category (category),
-  KEY idx_configs_is_enabled (is_enabled)
+  UNIQUE KEY uk_sys_config_key (config_key)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='系统配置表';
 
 SET FOREIGN_KEY_CHECKS = 1;

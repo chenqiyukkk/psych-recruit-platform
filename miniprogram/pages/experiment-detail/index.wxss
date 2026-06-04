@@ -1,14 +1,19 @@
 .detail-page {
-  padding-bottom: 140rpx;
+  padding-bottom: 210rpx;
 }
 
 .detail-head {
-  padding: 34rpx;
-  background: linear-gradient(145deg, #ffffff 0%, #edf6f2 100%);
+  padding: 40rpx 34rpx 36rpx;
+  border-radius: 24rpx;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 247, 0.98) 0%, rgba(224, 238, 233, 0.98) 100%),
+    #fffdf7;
+  box-shadow: 0 18rpx 42rpx rgba(53, 43, 28, 0.08);
 }
 
 .title {
-  margin-top: 18rpx;
+  margin-top: 20rpx;
+  color: #151c1a;
   font-size: 42rpx;
   font-weight: 800;
   line-height: 1.3;
@@ -16,31 +21,9 @@
 
 .summary {
   margin-top: 18rpx;
-  color: #4f5d59;
+  color: #4d5854;
   font-size: 28rpx;
   line-height: 1.65;
-}
-
-.status {
-  display: inline-block;
-  padding: 8rpx 14rpx;
-  border-radius: 8rpx;
-  font-size: 22rpx;
-}
-
-.status-success {
-  background: #dcefeb;
-  color: #0b7a6d;
-}
-
-.status-danger {
-  background: #f8d9d3;
-  color: #9f2d2d;
-}
-
-.status-muted {
-  background: #ece5d8;
-  color: #6f6a5f;
 }
 
 .info-grid {
@@ -52,26 +35,27 @@
 
 .info-cell {
   width: 335rpx;
-  min-height: 150rpx;
+  min-height: 152rpx;
   margin-bottom: 18rpx;
   padding: 22rpx;
 }
 
 .label {
-  color: #6d7b75;
+  color: #8c8478;
   font-size: 23rpx;
+  font-weight: 700;
 }
 
 .value {
   margin-top: 12rpx;
-  color: #24211c;
+  color: #151c1a;
   font-size: 27rpx;
-  font-weight: 650;
+  font-weight: 700;
   line-height: 1.45;
 }
 
 .highlight {
-  color: #c47f1e;
+  color: #b27d2d;
   font-size: 32rpx;
 }
 
@@ -81,20 +65,48 @@
 }
 
 .section-title {
+  color: #151c1a;
   font-size: 30rpx;
-  font-weight: 750;
+  font-weight: 800;
 }
 
 .section-content {
   margin-top: 16rpx;
-  color: #4f5d59;
+  color: #4d5854;
   font-size: 27rpx;
   line-height: 1.65;
+  word-break: break-all;
+}
+
+.apply-bar {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20rpx;
+  padding: 20rpx 28rpx calc(20rpx + env(safe-area-inset-bottom));
+  background: rgba(255, 253, 247, 0.98);
+  border-top: 1rpx solid #e3dacb;
+  box-shadow: 0 -16rpx 42rpx rgba(53, 43, 28, 0.1);
+}
+
+.apply-price {
+  color: #b27d2d;
+  font-size: 34rpx;
+  font-weight: 800;
+}
+
+.apply-note {
+  margin-top: 4rpx;
+  color: #7c827d;
+  font-size: 22rpx;
 }
 
 .apply-button {
-  position: fixed;
-  right: 28rpx;
-  bottom: 40rpx;
-  left: 28rpx;
+  width: 288rpx;
+  flex-shrink: 0;
 }
