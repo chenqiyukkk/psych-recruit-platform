@@ -3,7 +3,8 @@
 }
 
 .detail-head {
-  padding: 32rpx;
+  padding: 34rpx;
+  background: linear-gradient(145deg, #ffffff 0%, #edf6f2 100%);
 }
 
 .title {
@@ -15,7 +16,7 @@
 
 .summary {
   margin-top: 18rpx;
-  color: #5d574d;
+  color: #4f5d59;
   font-size: 28rpx;
   line-height: 1.65;
 }
@@ -28,8 +29,8 @@
 }
 
 .status-success {
-  background: #dff2ed;
-  color: #0f766e;
+  background: #dcefeb;
+  color: #0b7a6d;
 }
 
 .status-danger {
@@ -57,7 +58,7 @@
 }
 
 .label {
-  color: #797166;
+  color: #6d7b75;
   font-size: 23rpx;
 }
 
@@ -70,13 +71,13 @@
 }
 
 .highlight {
-  color: #9a6a1d;
+  color: #c47f1e;
   font-size: 32rpx;
 }
 
 .section {
   margin-top: 22rpx;
-  padding: 28rpx;
+  padding: 30rpx;
 }
 
 .section-title {
@@ -86,7 +87,7 @@
 
 .section-content {
   margin-top: 16rpx;
-  color: #5d574d;
+  color: #4f5d59;
   font-size: 27rpx;
   line-height: 1.65;
 }

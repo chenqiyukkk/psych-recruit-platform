@@ -11,7 +11,7 @@
 }
 
 .read-button {
-  width: 160rpx;
+  width: 168rpx;
 }
 
 .notification-list {
@@ -21,7 +21,7 @@
 }
 
 .notification-card {
-  padding: 26rpx;
+  padding: 28rpx;
 }
 
 .notification-top {
@@ -41,25 +41,25 @@
   width: 14rpx;
   height: 14rpx;
   border-radius: 50%;
-  background: #0f766e;
+  background: #0b7a6d;
 }
 
 .notification-content {
   margin-top: 14rpx;
-  color: #5d574d;
+  color: #4f5d59;
   font-size: 26rpx;
   line-height: 1.6;
 }
 
 .notification-time {
   margin-top: 14rpx;
-  color: #797166;
+  color: #6d7b75;
   font-size: 23rpx;
 }
 
 .loading {
   padding: 30rpx 0;
   text-align: center;
-  color: #797166;
+  color: #6d7b75;
   font-size: 26rpx;
 }

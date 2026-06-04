@@ -8,6 +8,8 @@ const {
   getExperimentStatusMeta,
   getRegistrationStatusMeta,
 } = require('../utils/format');
+const fs = require('node:fs');
+const path = require('node:path');
 
 test('buildUrl appends encoded query params and skips empty values', () => {
   const url = buildUrl('http://localhost:8080', '/api/experiments', {
@@ -47,4 +49,16 @@ test('format helpers produce miniapp friendly labels', () => {
   assert.equal(formatPayment(25), '¥25.00');
   assert.deepEqual(getExperimentStatusMeta('PUBLISHED'), { text: '招募中', className: 'success' });
   assert.deepEqual(getRegistrationStatusMeta('APPROVED'), { text: '已通过', className: 'success' });
+});
+
+test('profile page defaults to WeChat login with a test-account fallback', () => {
+  const profileWxml = fs.readFileSync(
+    path.join(__dirname, '../pages/profile/index.wxml'),
+    'utf8'
+  );
+  const requestSource = fs.readFileSync(path.join(__dirname, '../utils/request.js'), 'utf8');
+
+  assert.match(profileWxml, /微信授权登录/);
+  assert.match(profileWxml, /测试账号登录/);
+  assert.match(requestSource, /wxLogin/);
 });

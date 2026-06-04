@@ -75,6 +75,10 @@ const api = {
     return request({ path: '/api/auth/login', method: 'POST', data, auth: false });
   },
 
+  wxLogin(data) {
+    return request({ path: '/api/auth/wx-login', method: 'POST', data, auth: false });
+  },
+
   getExperiments(query) {
     return request({ path: '/api/experiments', query }).then(normalizePageData);
   },

@@ -11,6 +11,8 @@ Page({
     unreadCount: 0,
     loading: false,
     loginLoading: false,
+    wxLoginLoading: false,
+    showDevLogin: false,
     error: '',
   },
 
@@ -32,6 +34,53 @@ Page({
 
   onPasswordInput(event) {
     this.setData({ password: event.detail.value });
+  },
+
+  toggleDevLogin() {
+    this.setData({ showDevLogin: !this.data.showDevLogin });
+  },
+
+  loginByWechat() {
+    if (this.data.wxLoginLoading) {
+      return;
+    }
+
+    if (typeof wx === 'undefined' || !wx.login) {
+      wx.showToast({ title: '当前环境不支持微信登录', icon: 'none' });
+      return;
+    }
+
+    this.setData({ wxLoginLoading: true });
+    wx.login({
+      success: (res) => {
+        if (!res.code) {
+          wx.showToast({ title: '微信登录失败', icon: 'none' });
+          this.setData({ wxLoginLoading: false });
+          return;
+        }
+
+        api
+          .wxLogin({ code: res.code })
+          .then((result) => {
+            getApp().setToken(result.token);
+            this.setData({ token: result.token });
+            return this.loadDashboard();
+          })
+          .then(() => {
+            wx.showToast({ title: '登录成功', icon: 'success' });
+          })
+          .catch((error) => {
+            wx.showToast({ title: error.message || '微信登录接口待完成', icon: 'none' });
+          })
+          .finally(() => {
+            this.setData({ wxLoginLoading: false });
+          });
+      },
+      fail: () => {
+        wx.showToast({ title: '微信登录失败', icon: 'none' });
+        this.setData({ wxLoginLoading: false });
+      },
+    });
   },
 
   login() {
@@ -68,6 +117,7 @@ Page({
       unreadCount: 0,
       username: '',
       password: '',
+      showDevLogin: false,
     });
   },
 
