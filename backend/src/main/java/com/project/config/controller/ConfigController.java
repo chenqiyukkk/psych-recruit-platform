@@ -64,7 +64,7 @@ public class ConfigController {
      * 获取所有配置项（管理员）。
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('研究者','管理员')")
     public Result<List<Config>> listAll() {
         return Result.success(configService.listAll());
     }
@@ -77,7 +77,7 @@ public class ConfigController {
      * @param request 包含新值和可选说明
      */
     @PutMapping("/{key}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('研究者','管理员')")
     public Result<Config> update(
             @PathVariable String key,
             @Valid @RequestBody ConfigUpdateRequest request) {
