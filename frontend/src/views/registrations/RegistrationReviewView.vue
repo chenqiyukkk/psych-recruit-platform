@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">报名审核</h1>
-        <p class="page-subtitle">研究者/管理员可查看实验报名记录，执行通过、拒绝、签到与完成确认。</p>
+        <p class="page-subtitle">研究者或管理员可按实验查看报名记录，并集中完成审核、签到与完成确认。</p>
       </div>
       <div class="inline-actions">
         <el-button @click="loadRegistrations" :disabled="!selectedExperimentId">刷新</el-button>
@@ -18,7 +18,7 @@
           </el-select>
         </el-form-item>
       </el-form>
-      <div class="page-subtitle">先通过 `/api/experiments` 拉取实验，再根据实验 ID 调用 `/api/registrations/experiment/{experimentId}`。</div>
+      <div class="page-subtitle">选择实验后即可查看相关报名记录，并执行审核、签到或完成确认。</div>
     </el-card>
 
     <el-card class="panel-card" shadow="never">

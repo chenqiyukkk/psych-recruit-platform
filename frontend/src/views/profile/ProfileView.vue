@@ -4,7 +4,7 @@
       <div>
         <h1 class="page-title">个人资料</h1>
         <p class="page-subtitle">
-          查看当前账号的角色、信誉分与评价概况，并维护 Web 端已开放的基础资料字段。
+          查看当前账号的角色、信誉分与评价概况，并维护当前账号已开放的基础资料字段。
         </p>
       </div>
       <div class="inline-actions">
@@ -26,7 +26,7 @@
       <section class="metric-card" style="background: linear-gradient(135deg, #7c3aed, #2563eb)">
         <div class="metric-card__label">研究者评分</div>
         <div class="metric-card__value">{{ profile?.researcherRating ?? '--' }}</div>
-        <div class="metric-card__hint">该字段只读展示，保存资料时不会修改</div>
+        <div class="metric-card__hint">该指标仅用于展示当前履约与反馈表现</div>
       </section>
     </div>
 
@@ -36,7 +36,7 @@
           <template #header>
             <div>
               <strong>资料概览</strong>
-              <div class="page-subtitle">这些字段来自 `GET /api/users/profile`，用于展示但不可直接编辑。</div>
+              <div class="page-subtitle">以下信息用于展示当前账号身份与基础概况，便于你快速确认当前账号状态。</div>
             </div>
           </template>
           <el-descriptions :column="1" border>
@@ -54,7 +54,7 @@
           <template #header>
             <div>
               <strong>基础资料编辑</strong>
-              <div class="page-subtitle">当前后端仅支持更新手机号与邮箱。保存成功后会同步刷新顶部用户资料状态。</div>
+              <div class="page-subtitle">你可以在这里维护常用联系方式，保存后会同步更新当前账号资料显示。</div>
             </div>
           </template>
 

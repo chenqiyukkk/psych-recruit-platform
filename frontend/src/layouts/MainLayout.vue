@@ -35,7 +35,7 @@
           <el-icon><ChatDotRound /></el-icon>
           <span>评价管理</span>
         </el-menu-item>
-        <el-menu-item index="/config">
+        <el-menu-item v-if="isAdmin" index="/config">
           <el-icon><Setting /></el-icon>
           <span>系统配置</span>
         </el-menu-item>
@@ -110,7 +110,7 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ElMessageBox } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   ArrowDown,
   ChatDotRound,
@@ -129,6 +129,7 @@ import {
   markAllNotificationsRead,
   markNotificationRead,
 } from '../api/dashboard';
+import { ROLE_ADMIN } from '../constants/roles';
 import { useAuthStore } from '../stores/auth';
 import { formatDateTime } from '../utils/format';
 
@@ -164,7 +165,7 @@ const activeMenu = computed(() => {
 });
 
 const initials = computed(() => authStore.profile?.username?.slice(0, 1)?.toUpperCase() || '心');
-const isAdmin = computed(() => authStore.profile?.role === '管理员');
+const isAdmin = computed(() => authStore.profile?.role === ROLE_ADMIN);
 
 async function loadNotifications() {
   const data = await getNotifications({ page: 0, size: 8 });

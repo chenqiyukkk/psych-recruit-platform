@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { getProfile, login, logout } from '../api/auth';
-import { WEB_ALLOWED_ROLES } from '../constants/roles';
+import { ROLE_ADMIN, ROLE_RESEARCHER, WEB_ALLOWED_ROLES } from '../constants/roles';
 import { clearToken, getToken, setToken } from '../utils/storage';
 
 export const useAuthStore = defineStore('auth', {
@@ -13,6 +13,8 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: (state) => Boolean(state.token),
     isWebAllowed: (state) =>
       Boolean(state.profile?.role) && WEB_ALLOWED_ROLES.includes(state.profile.role),
+    isAdmin: (state) => state.profile?.role === ROLE_ADMIN,
+    isResearcher: (state) => state.profile?.role === ROLE_RESEARCHER,
   },
   actions: {
     async login(credentials) {

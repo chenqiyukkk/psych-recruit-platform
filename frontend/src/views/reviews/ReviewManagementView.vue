@@ -4,7 +4,7 @@
       <div>
         <h1 class="page-title">评价管理</h1>
         <p class="page-subtitle">
-          研究者可在实验完成后对被试发起评价，并查看自己发出的评价与收到的评价。页面继续沿用当前后台的管理型视觉层次与操作反馈模式。
+          研究者可在实验完成后对被试发起评价，并查看自己发出的评价与收到的评价。
         </p>
       </div>
       <div class="inline-actions">
@@ -33,9 +33,7 @@
               </el-select>
             </el-form-item>
           </el-form>
-          <div class="page-subtitle">
-            仅展示已通过、已签到、已完成的报名记录；研究者可对这些记录发起 `RESEARCHER_TO_SUBJECT` 评价。
-          </div>
+          <div class="page-subtitle">仅展示已完成研究流程的报名记录，研究者可在这里继续对被试发起评价。</div>
         </el-card>
 
         <template v-if="isResearcher">
@@ -84,14 +82,14 @@
 
             <el-empty
               v-if="!loading && selectedExperimentId && !eligibleRows.length"
-              description="当前实验暂无已完成且可评价的报名记录"
+              description="当前实验暂无可评价的报名记录"
             />
             <el-empty v-if="!loading && !selectedExperimentId" description="请先选择实验" />
           </el-card>
         </template>
 
         <el-card v-else class="panel-card" shadow="never">
-          <el-empty description="当前后端仅支持研究者在 Web 端发起对被试的评价，管理员可在下方查看已有评价记录。" />
+          <el-empty description="当前账号可查看评价结果，研究者账号可在满足条件的实验流程后继续发起评价。" />
         </el-card>
       </el-tab-pane>
 
@@ -350,7 +348,7 @@ function openReviewDialog(row) {
 
 function switchToMyReviews(registrationId) {
   activeTab.value = 'my-reviews';
-  ElMessage.info(`报名 ${registrationId} 已有研究者评价，可在“我发出的评价”中查看。`);
+  ElMessage.info(`报名 ${registrationId} 的评价记录已收录，可在“我发出的评价”中查看。`);
 }
 
 async function submitReview() {

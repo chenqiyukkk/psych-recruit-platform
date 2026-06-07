@@ -4,7 +4,7 @@
       <div>
         <h1 class="page-title">支付确认</h1>
         <p class="page-subtitle">
-          研究者 / 管理员可围绕已报名记录查看支付状态、发起付款确认，并为后续评价与申诉流程做准备。
+          研究者或管理员可围绕已报名记录查看支付状态、登记付款进度，并为后续评价与申诉流程做准备。
         </p>
       </div>
       <div class="inline-actions">
@@ -31,9 +31,7 @@
           </el-select>
         </el-form-item>
       </el-form>
-      <div class="page-subtitle">
-        先通过 `/api/experiments` 拉取实验，再根据实验 ID 读取报名记录，并按报名 ID 查询支付状态。
-      </div>
+      <div class="page-subtitle">选择实验后即可查看相关报名记录，并逐条跟进支付状态。</div>
     </el-card>
 
     <el-row :gutter="18">
@@ -102,21 +100,21 @@
           <template #header>
             <div>
               <strong>支付流程说明</strong>
-              <div class="page-subtitle">支付状态来自后端 PaymentService 的状态流转。</div>
+              <div class="page-subtitle">以下状态帮助你快速判断当前记录还处于哪个支付阶段。</div>
             </div>
           </template>
           <el-timeline>
-            <el-timeline-item timestamp="PENDING" type="info">
-              尚未创建支付记录，或尚未发起付款确认
+            <el-timeline-item timestamp="未确认" type="info">
+              还没有登记付款信息，或尚未完成付款确认
             </el-timeline-item>
-            <el-timeline-item timestamp="PAID" type="warning">
-              研究者已确认付款，可等待被试确认收款
+            <el-timeline-item timestamp="已付款" type="warning">
+              付款方已登记支付，等待对方确认收款
             </el-timeline-item>
-            <el-timeline-item timestamp="CONFIRMED" type="success">
-              被试已确认到账，支付流程完成
+            <el-timeline-item timestamp="已确认" type="success">
+              对方已确认到账，本次支付流程已完成
             </el-timeline-item>
-            <el-timeline-item timestamp="DISPUTED" type="danger">
-              支付争议中，需后续配合申诉流程处理
+            <el-timeline-item timestamp="争议中" type="danger">
+              当前支付存在争议，可转入后续申诉处理
             </el-timeline-item>
           </el-timeline>
         </el-card>
@@ -125,7 +123,7 @@
           <template #header>
             <div>
               <strong>当前实验默认金额</strong>
-              <div class="page-subtitle">支付确认弹窗会默认带出实验报酬金额。</div>
+              <div class="page-subtitle">打开确认弹窗时，会优先带出实验的默认报酬金额。</div>
             </div>
           </template>
           <el-statistic
@@ -135,7 +133,7 @@
             :precision="2"
           />
           <div class="page-subtitle" style="margin-top: 12px; line-height: 1.8">
-            {{ selectedExperiment?.paymentDescription || '暂无报酬说明，可在实验详情中补充。' }}
+            {{ selectedExperiment?.paymentDescription || '当前实验暂未补充报酬说明。' }}
           </div>
         </el-card>
       </el-col>

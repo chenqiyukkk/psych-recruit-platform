@@ -4,7 +4,7 @@
       <div>
         <h1 class="page-title">申诉管理</h1>
         <p class="page-subtitle">
-          面向管理员集中查看用户申诉、按状态筛选，并执行通过 / 拒绝审核。该页面延续现有管理台的卡片与操作反馈风格。
+          面向管理员集中查看用户申诉、按状态筛选，并完成通过 / 拒绝等审核处理。
         </p>
       </div>
       <div class="inline-actions">
@@ -32,9 +32,7 @@
             </div>
           </el-form-item>
         </el-form>
-        <div class="page-subtitle">
-          列表接口为 `/api/appeals`，当前按后端实际分页结构读取 `data.content / totalElements`。
-        </div>
+        <div class="page-subtitle">按状态筛选后，可集中处理待审核申诉，并跟踪历史处理结果。</div>
       </el-card>
 
       <el-row :gutter="18">
@@ -103,21 +101,18 @@
             <template #header>
               <div>
                 <strong>处理说明</strong>
-                <div class="page-subtitle">当前后端审核通过后会更新状态并发送通知，但不会自动撤销底层业务记录。</div>
+                <div class="page-subtitle">审核结果会同步通知相关用户；如需继续处理原业务记录，请前往对应业务页面操作。</div>
               </div>
             </template>
             <el-timeline>
-              <el-timeline-item timestamp="PENDING" type="warning">
-                待处理申诉，可进入审核弹窗执行通过或拒绝
+              <el-timeline-item timestamp="待处理" type="warning">
+                当前申诉正在等待管理员审核，可进入详情查看并做出处理结论
               </el-timeline-item>
-              <el-timeline-item timestamp="APPROVED" type="success">
-                已通过，用户会收到结果通知
+              <el-timeline-item timestamp="已通过" type="success">
+                申诉审核通过，相关用户会收到通知，后续业务处理可继续跟进
               </el-timeline-item>
-              <el-timeline-item timestamp="REJECTED" type="danger">
-                已拒绝，可查看审核意见
-              </el-timeline-item>
-              <el-timeline-item timestamp="UNDER_REVIEW" type="info">
-                当前后端服务未实际写入，但页面已兼容展示
+              <el-timeline-item timestamp="已拒绝" type="danger">
+                申诉已拒绝，可在详情中查看或补充审核说明
               </el-timeline-item>
             </el-timeline>
           </el-card>
@@ -144,10 +139,10 @@
 
         <el-alert
           style="margin-top: 18px"
-          type="warning"
+          type="info"
           :closable="false"
           show-icon
-          title="审核通过后，当前后端只会更新申诉状态并发送通知，不会自动回滚底层业务。"
+          title="提交审核后，系统会更新申诉状态并通知相关用户；如涉及后续业务调整，请继续到对应页面处理。"
         />
 
         <el-form
@@ -168,7 +163,7 @@
               v-model="reviewForm.reviewComment"
               type="textarea"
               :rows="4"
-              placeholder="可填写补充说明或拒绝理由"
+              placeholder="可填写审核说明、补充建议或拒绝理由"
               :disabled="isReviewed(currentAppeal)"
             />
           </el-form-item>
@@ -191,7 +186,7 @@
     </template>
 
     <el-card v-else class="panel-card" shadow="never">
-      <el-empty description="当前账号仅可查看研究者工作流。申诉管理页仅对管理员开放。" />
+      <el-empty description="当前账号仅可使用研究者工作流。申诉处理入口仅对管理员开放。" />
     </el-card>
   </div>
 </template>
@@ -235,25 +230,27 @@ const formRules = {
   decision: [{ required: true, message: '请选择审核结论', trigger: 'change' }],
 };
 
-function isReviewed(appeal) {
-  return appeal && ['APPROVED', 'REJECTED'].includes(appeal.status);
-}
-
-function formatAppealType(value) {
-  return appealTypeMap[value]?.label || value || '--';
+function formatAppealType(type) {
+  return appealTypeMap[type]?.label || type || '--';
 }
 
 function formatEvidence(value) {
   if (!value) {
     return '--';
   }
-
   try {
     const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed.join('；') : value;
+    if (Array.isArray(parsed)) {
+      return parsed.join('，');
+    }
   } catch (_error) {
     return value;
   }
+  return value;
+}
+
+function isReviewed(item) {
+  return ['APPROVED', 'REJECTED'].includes(item?.status);
 }
 
 function buildParams() {
@@ -304,22 +301,18 @@ function openDialog(row) {
 }
 
 async function submitReview() {
-  if (!currentAppeal.value) {
-    return;
-  }
   const valid = await formRef.value?.validate().catch(() => false);
-  if (!valid) {
+  if (!valid || !currentAppeal.value) {
     return;
   }
 
   submitting.value = true;
   try {
-    const updated = await reviewAppeal(currentAppeal.value.id, {
+    await reviewAppeal(currentAppeal.value.id, {
       decision: reviewForm.decision,
-      reviewComment: reviewForm.reviewComment,
+      reviewComment: reviewForm.reviewComment || null,
     });
-    ElMessage.success('申诉审核已提交');
-    currentAppeal.value = updated;
+    ElMessage.success('申诉审核结果已保存');
     dialogVisible.value = false;
     await loadAppeals();
   } finally {

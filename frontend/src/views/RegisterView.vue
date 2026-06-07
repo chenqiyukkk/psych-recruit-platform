@@ -1,23 +1,23 @@
 <template>
   <div class="login-page">
     <div class="login-hero">
-      <div class="hero-badge">心试通 · Web 管理后台</div>
-      <h1>让研究流程更清晰，也让管理体验更专业。</h1>
+      <div class="hero-badge">心试通 · 研究者注册</div>
+      <h1>从注册开始，把研究项目管理得更有秩序。</h1>
       <p>
-        心试通 Web 管理端面向研究者与管理员，聚焦实验创建、报名审核、支付跟进与后台治理。
+        该入口仅面向研究者创建 Web 管理后台账号，帮助你快速接入实验创建、报名审核、支付确认与后续流程治理。
       </p>
       <div class="hero-grid">
         <div class="hero-card">
-          <span>实验发布</span>
-          <strong>从草稿到招募，全流程可控</strong>
+          <span>研究者专用</span>
+          <strong>该入口默认创建研究者账号，不提供管理员或被试角色切换。</strong>
         </div>
         <div class="hero-card">
-          <span>审核中台</span>
-          <strong>快速处理报名、签到与完成确认</strong>
+          <span>快速开始</span>
+          <strong>注册完成后即可前往登录页，继续进入实验管理与后台工作流。</strong>
         </div>
         <div class="hero-card">
-          <span>协同治理</span>
-          <strong>用统一视角追踪实验状态与后续处理流程</strong>
+          <span>体验统一</span>
+          <strong>延续后台现有卡片与层次风格，让注册入口也保持正式、清晰的产品体验。</strong>
         </div>
       </div>
     </div>
@@ -25,21 +25,29 @@
     <el-card class="login-card" shadow="never">
       <template #header>
         <div>
-          <div class="login-card__title">登录 Web 管理后台</div>
-          <div class="login-card__subtitle">请使用研究者或管理员账号登录，开始处理实验与后台工作流程。</div>
+          <div class="login-card__title">注册研究者账号</div>
+          <div class="login-card__subtitle">
+            当前 Web 管理后台注册入口仅面向研究者开放。其他角色请使用对应的业务入口。
+          </div>
         </div>
       </template>
 
       <el-alert
-        type="info"
+        type="warning"
         show-icon
         :closable="false"
-        title="被试账号主要用于用户侧流程。若当前账号不属于 Web 管理后台角色，系统会提示你切换到合适入口。"
+        title="该注册入口会自动按研究者身份创建账号，不需要手动选择角色。"
       />
 
-      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="login-form" @keyup.enter="submit">
+      <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="login-form">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" placeholder="请输入用户名" size="large" />
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone">
+          <el-input v-model="form.phone" placeholder="可选，便于后续联系" size="large" />
+        </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="form.email" placeholder="可选，便于接收通知" size="large" />
         </el-form-item>
         <el-form-item label="密码" prop="password">
           <el-input
@@ -50,14 +58,23 @@
             size="large"
           />
         </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input
+            v-model="form.confirmPassword"
+            type="password"
+            show-password
+            placeholder="请再次输入密码"
+            size="large"
+          />
+        </el-form-item>
         <el-button type="primary" size="large" class="login-button" :loading="submitting" @click="submit">
-          登录并进入工作台
+          创建研究者账号
         </el-button>
       </el-form>
 
       <div class="register-footer">
-        还没有研究者账号？
-        <el-button link type="primary" @click="router.push('/register')">前往注册</el-button>
+        已有研究者或管理员账号？
+        <el-button link type="primary" @click="router.push('/login')">返回登录</el-button>
       </div>
     </el-card>
   </div>
@@ -65,25 +82,50 @@
 
 <script setup>
 import { reactive, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
-import { useAuthStore } from '../stores/auth';
+import { register } from '../api/auth';
+import { ROLE_RESEARCHER } from '../constants/roles';
 
 const router = useRouter();
-const route = useRoute();
-const authStore = useAuthStore();
-
 const formRef = ref();
 const submitting = ref(false);
 
 const form = reactive({
-  username: String(route.query.username || ''),
+  username: '',
+  phone: '',
+  email: '',
   password: '',
+  confirmPassword: '',
 });
 
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
+  confirmPassword: [
+    { required: true, message: '请再次输入密码', trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        if (!value) {
+          callback(new Error('请再次输入密码'));
+          return;
+        }
+        if (value !== form.password) {
+          callback(new Error('两次输入的密码不一致'));
+          return;
+        }
+        callback();
+      },
+      trigger: 'blur',
+    },
+  ],
+  email: [
+    {
+      type: 'email',
+      message: '请输入合法的邮箱地址',
+      trigger: 'blur',
+    },
+  ],
 };
 
 async function submit() {
@@ -94,9 +136,18 @@ async function submit() {
 
   submitting.value = true;
   try {
-    await authStore.login(form);
-    ElMessage.success('登录成功');
-    router.push((route.query.redirect && String(route.query.redirect)) || '/dashboard');
+    await register({
+      username: form.username,
+      password: form.password,
+      phone: form.phone || null,
+      email: form.email || null,
+      role: ROLE_RESEARCHER,
+    });
+    ElMessage.success('研究者账号注册成功，请继续登录后台');
+    router.push({
+      path: '/login',
+      query: { username: form.username },
+    });
   } finally {
     submitting.value = false;
   }
@@ -107,7 +158,7 @@ async function submit() {
 .login-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 440px);
+  grid-template-columns: minmax(0, 1.1fr) minmax(360px, 460px);
   align-items: stretch;
 }
 
@@ -117,7 +168,7 @@ async function submit() {
   flex-direction: column;
   justify-content: center;
   background:
-    radial-gradient(circle at top right, rgba(59, 130, 246, 0.24), transparent 26%),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.24), transparent 26%),
     linear-gradient(180deg, rgba(15, 23, 42, 0.94), rgba(30, 41, 59, 0.96));
   color: #eff6ff;
 }
