@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">实验管理</h1>
-        <p class="page-subtitle">围绕实验全生命周期进行筛选、查看、发布与状态回收。</p>
+        <p class="page-subtitle">围绕实验全生命周期进行筛选、查看、发布与状态回收。研究者账号仅展示自己创建的实验。</p>
       </div>
       <div class="inline-actions">
         <el-button @click="loadData">刷新</el-button>
@@ -58,6 +58,9 @@
             {{ riskText(row.riskLevel) }}
           </template>
         </el-table-column>
+        <el-table-column label="人数上限" width="120">
+          <template #default="{ row }">{{ row.participantLimit || '--' }} 人</template>
+        </el-table-column>
         <el-table-column label="报酬" width="140">
           <template #default="{ row }">{{ formatCurrency(row.paymentAmount) }}</template>
         </el-table-column>
@@ -106,6 +109,7 @@
 <script setup>
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { useAuthStore } from '../../stores/auth';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   cancelExperiment,
@@ -122,6 +126,7 @@ import ExperimentStatusTag from '../../components/ExperimentStatusTag.vue';
 import { formatCurrency, formatDateTime } from '../../utils/format';
 
 const router = useRouter();
+const authStore = useAuthStore();
 const loading = ref(false);
 const total = ref(0);
 const records = ref([]);
@@ -145,17 +150,28 @@ function riskText(value) {
 function buildParams() {
   return {
     ...filters,
+    organizerId: authStore.isResearcher ? authStore.profile?.id : undefined,
     page: pagination.page,
     size: pagination.size,
   };
 }
 
 async function loadData() {
+  if (authStore.isResearcher && !authStore.profile?.id) {
+    records.value = [];
+    total.value = 0;
+    return;
+  }
+
   loading.value = true;
   try {
     const pageData = await getExperiments(buildParams());
-    records.value = pageData.content || [];
-    total.value = pageData.totalElements || 0;
+    const content = pageData.content || [];
+    const visibleRecords = authStore.isResearcher
+      ? content.filter((item) => item.organizerId === authStore.profile?.id)
+      : content;
+    records.value = visibleRecords;
+    total.value = authStore.isResearcher ? visibleRecords.length : pageData.totalElements || 0;
   } finally {
     loading.value = false;
   }
