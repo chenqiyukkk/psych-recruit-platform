@@ -152,6 +152,10 @@ Page({
     wx.navigateTo({ url: '/pages/notifications/index' });
   },
 
+  openAppeals() {
+    wx.navigateTo({ url: '/pages/appeals/index' });
+  },
+
   enrichRegistrations(registrations) {
     const list = Array.isArray(registrations) ? registrations : [];
     const formatted = list.map(formatRegistration);

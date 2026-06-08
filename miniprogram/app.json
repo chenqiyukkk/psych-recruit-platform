@@ -3,19 +3,20 @@
     "pages/home/index",
     "pages/experiment-detail/index",
     "pages/profile/index",
-    "pages/notifications/index"
+    "pages/notifications/index",
+    "pages/appeals/index"
   ],
   "window": {
     "navigationBarTitleText": "心试通",
-    "navigationBarBackgroundColor": "#f6f1e8",
+    "navigationBarBackgroundColor": "#f4f7f2",
     "navigationBarTextStyle": "black",
-    "backgroundColor": "#f6f1e8"
+    "backgroundColor": "#f4f7f2"
   },
   "tabBar": {
     "custom": true,
-    "color": "#7c827d",
-    "selectedColor": "#075e56",
-    "backgroundColor": "#fffdf7",
+    "color": "#6f7d76",
+    "selectedColor": "#0b6f62",
+    "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
       {

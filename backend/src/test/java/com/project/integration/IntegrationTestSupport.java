@@ -72,6 +72,7 @@ abstract class IntegrationTestSupport {
     request.setTitle(title);
     request.setDescription("用于集成测试的实验");
     request.setLocation("心理学院 101 室");
+    request.setParticipantLimit(10);
     request.setStartTime(LocalDateTime.now().plusDays(1));
     request.setEndTime(LocalDateTime.now().plusDays(1).plusHours(2));
     request.setEthicsApprovalNo("IRB-TEST-2026-001");
@@ -88,7 +89,7 @@ abstract class IntegrationTestSupport {
 
     ExperimentResponse created = experimentService.create(request, organizerUsername);
     experimentService.publish(created.getId(), organizerUsername);
-    return experimentService.getById(created.getId());
+    return experimentService.getById(created.getId(), organizerUsername);
   }
 
   protected RegistrationResponse applyAndApproveRegistration(

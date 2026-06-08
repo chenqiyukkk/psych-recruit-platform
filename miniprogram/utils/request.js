@@ -110,6 +110,22 @@ const api = {
   markAllNotificationsRead() {
     return request({ path: '/api/notifications/read-all', method: 'PUT' });
   },
+
+  markNotificationRead(id) {
+    return request({ path: `/api/notifications/${id}/read`, method: 'PUT' });
+  },
+
+  deleteNotification(id) {
+    return request({ path: `/api/notifications/${id}`, method: 'DELETE' });
+  },
+
+  getMyAppeals() {
+    return request({ path: '/api/appeals/my' });
+  },
+
+  createAppeal(data) {
+    return request({ path: '/api/appeals', method: 'POST', data });
+  },
 };
 
 module.exports = {

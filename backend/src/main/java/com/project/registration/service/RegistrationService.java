@@ -4,7 +4,9 @@ package com.project.registration.service;
 import com.project.common.exception.ApiException;
 import com.project.experiment.ExperimentConstants;
 import com.project.experiment.entity.Experiment;
+import com.project.experiment.entity.ExperimentTag;
 import com.project.experiment.repo.ExperimentRepository;
+import com.project.experiment.repo.ExperimentTagRepository;
 import com.project.registration.RegistrationConstants;
 import com.project.registration.dto.RegistrationResponse;
 import com.project.registration.entity.Registration;
@@ -16,9 +18,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -29,6 +34,8 @@ public class RegistrationService {
     private final RegistrationRepository registrationRepository;
 
     private final ExperimentRepository experimentRepository;
+
+    private final ExperimentTagRepository experimentTagRepository;
 
     private final UserRepository userRepository;
 
@@ -52,6 +59,7 @@ public class RegistrationService {
         }
 
         LocalDateTime now = LocalDateTime.now();
+        validateTagCoolingPeriod(user.getId(), experiment, now);
 
         Registration registration = new Registration();
         registration.setExperimentId(experimentId);
@@ -92,6 +100,17 @@ public class RegistrationService {
 
         if(!RegistrationConstants.STATUS_PENDING.equals(registration.getStatus())){
             throw new ApiException(400,"只有待审核报名可以通过");
+        }
+
+        Integer participantLimit = experiment.getParticipantLimit();
+        if (participantLimit != null) {
+            long occupiedSlots =
+                    registrationRepository.countByExperimentIdAndStatusIn(
+                            experiment.getId(),
+                            Set.of(RegistrationConstants.STATUS_APPROVED));
+            if (occupiedSlots >= participantLimit) {
+                throw new ApiException(400, "实验人数已满");
+            }
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -154,6 +173,50 @@ public class RegistrationService {
     private Registration getRegistrationById(Long registrationId){
         return registrationRepository.findById(registrationId)
                 .orElseThrow(() -> new ApiException(401,"报名记录不存在"));
+    }
+
+    private void validateTagCoolingPeriod(Long userId, Experiment experiment, LocalDateTime now) {
+        List<ExperimentTag> currentTags = experimentTagRepository.findByExperimentId(experiment.getId());
+        if (currentTags.isEmpty()) {
+            return;
+        }
+
+        for (Registration completedRegistration :
+                registrationRepository.findByUserIdAndIsCompletedTrueOrderByAppliedAtDesc(userId)) {
+            Optional<Experiment> historicalExperiment =
+                    experimentRepository.findById(completedRegistration.getExperimentId());
+            if (historicalExperiment.isEmpty()) {
+                continue;
+            }
+
+            List<ExperimentTag> historicalTags =
+                    experimentTagRepository.findByExperimentId(historicalExperiment.get().getId());
+            for (ExperimentTag currentTag : currentTags) {
+                if (currentTag.getCoolingDays() == null || currentTag.getCoolingDays() <= 0) {
+                    continue;
+                }
+                boolean sameTag = historicalTags.stream()
+                        .anyMatch(historicalTag -> Objects.equals(
+                                normalizeTagName(historicalTag.getTagName()),
+                                normalizeTagName(currentTag.getTagName())));
+                if (!sameTag) {
+                    continue;
+                }
+
+                LocalDateTime availableAt =
+                        historicalExperiment.get().getEndTime().plusDays(currentTag.getCoolingDays());
+                if (availableAt.isAfter(now)) {
+                    long remainingDays = Duration.between(now, availableAt).toDays() + 1;
+                    throw new ApiException(
+                            400,
+                            "您近期已参加过同类实验，请" + remainingDays + "天后再报名");
+                }
+            }
+        }
+    }
+
+    private String normalizeTagName(String tagName) {
+        return tagName == null ? "" : tagName.trim();
     }
 
     private void assertCanManageExperiment(String username,Experiment experiment){

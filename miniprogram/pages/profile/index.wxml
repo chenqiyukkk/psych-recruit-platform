@@ -56,6 +56,21 @@
       </view>
     </view>
 
+    <view class="section-title">快捷入口</view>
+    <view class="menu-list">
+      <view class="menu-item panel" bindtap="openNotifications">
+        <view class="menu-label">
+          消息通知
+          <view wx:if="{{unreadCount > 0}}" class="badge">{{unreadCount}}</view>
+        </view>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item panel" bindtap="openAppeals">
+        <view class="menu-label">我的申诉</view>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+
     <view class="section-title">我的报名</view>
     <view wx:if="{{!loading && registrations.length === 0}}" class="empty panel">暂无报名记录</view>
     <view class="registration-list">

@@ -53,16 +53,17 @@ public class ExperimentController {
   }
 
   @GetMapping("/{id}")
-  public Result<ExperimentResponse> get(@PathVariable("id") Long id) {
-    return Result.success(experimentService.getById(id));
+  public Result<ExperimentResponse> get(Authentication authentication, @PathVariable("id") Long id) {
+    return Result.success(experimentService.getById(id, authentication.getName()));
   }
 
   @GetMapping
   public Result<Page<ExperimentResponse>> query(
+      Authentication authentication,
       @ModelAttribute ExperimentQueryRequest query,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "10") int size) {
-    return Result.success(experimentService.query(query, page, size));
+    return Result.success(experimentService.query(query, page, size, authentication.getName()));
   }
 
   @PostMapping("/{id}/publish")
@@ -79,4 +80,3 @@ public class ExperimentController {
     return Result.success(null);
   }
 }
-

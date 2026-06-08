@@ -23,6 +23,11 @@
 
 .notification-card {
   padding: 28rpx;
+  transition: background 0.2s;
+}
+
+.notification-card:active {
+  background: rgba(237, 229, 216, 0.6);
 }
 
 .notification-top {
@@ -44,6 +49,7 @@
   height: 14rpx;
   border-radius: 50%;
   background: #075e56;
+  flex-shrink: 0;
 }
 
 .notification-content {

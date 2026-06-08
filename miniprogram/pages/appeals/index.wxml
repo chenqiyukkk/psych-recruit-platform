@@ -1,0 +1,81 @@
+<view class="page appeals-page">
+  <view class="appeal-head">
+    <view class="appeal-kicker">APPEAL</view>
+    <view class="appeal-title">我的申诉</view>
+    <view class="appeal-subtitle">从已完成实验中选择争议对象，提交说明后跟踪处理状态。</view>
+  </view>
+
+  <view class="form-panel panel">
+    <view class="panel-title">提交申诉</view>
+
+    <view class="field-label">申诉类型</view>
+    <picker range="{{appealTypes}}" range-key="label" value="{{typeIndex}}" bindchange="onTypeChange">
+      <view class="picker-field">{{appealTypes[typeIndex].label}}</view>
+    </picker>
+
+    <view class="field-label">选择已完成实验</view>
+    <picker
+      range="{{completedExperimentOptions}}"
+      value="{{experimentIndex}}"
+      disabled="{{completedExperimentOptions.length === 0}}"
+      bindchange="onExperimentChange"
+    >
+      <view class="picker-field {{completedExperimentOptions.length === 0 ? 'placeholder' : ''}}">
+        {{completedExperimentOptions.length ? completedExperimentOptions[experimentIndex] : '暂无已完成实验可申诉'}}
+      </view>
+    </picker>
+
+    <view class="field-label">申诉理由</view>
+    <textarea
+      class="reason-input"
+      value="{{reason}}"
+      maxlength="300"
+      placeholder="请说明争议原因，至少10个字"
+      bindinput="onReasonInput"
+    />
+
+    <view class="field-label">证据链接</view>
+    <textarea
+      class="evidence-input"
+      value="{{evidenceUrls}}"
+      maxlength="500"
+      placeholder="可选，多条链接用换行或逗号分隔"
+      bindinput="onEvidenceInput"
+    />
+
+    <button class="primary-button submit-button" loading="{{submitting}}" bindtap="submitAppeal">
+      提交申诉
+    </button>
+  </view>
+
+  <view class="list-title">申诉记录</view>
+  <view wx:if="{{error}}" class="empty panel">{{error}}</view>
+  <view wx:if="{{!loading && appeals.length === 0 && !error}}" class="empty panel">
+    暂无申诉记录
+  </view>
+
+  <view class="appeal-list">
+    <view
+      wx:for="{{appeals}}"
+      wx:key="id"
+      class="appeal-card panel"
+      data-appeal="{{item}}"
+      bindtap="onTapAppeal"
+    >
+      <view class="appeal-card-top">
+        <view>
+          <view class="appeal-type">{{item.appealTypeText}}</view>
+          <view class="appeal-target">关联实验 #{{item.targetId}}</view>
+        </view>
+        <view class="status status-{{item.statusClassName}}">{{item.statusText}}</view>
+      </view>
+      <view class="appeal-reason">{{item.reason || '无'}}</view>
+      <view class="appeal-meta">
+        <text class="appeal-time">{{item.createdAtText}}</text>
+        <text wx:if="{{item.reviewComment}}" class="appeal-comment">已回复</text>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+</view>

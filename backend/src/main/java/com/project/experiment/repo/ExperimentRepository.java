@@ -6,4 +6,3 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface ExperimentRepository
     extends JpaRepository<Experiment, Long>, JpaSpecificationExecutor<Experiment> {}
-

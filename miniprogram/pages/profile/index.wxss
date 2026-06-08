@@ -127,11 +127,89 @@
   font-size: 22rpx;
 }
 
+.quick-actions {
+  margin-top: 22rpx;
+}
+
+.quick-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 28rpx 30rpx;
+}
+
+.quick-title {
+  color: #151c1a;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.quick-desc {
+  margin-top: 8rpx;
+  color: #68736f;
+  font-size: 24rpx;
+}
+
+.quick-arrow {
+  color: #0b6f62;
+  font-size: 46rpx;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .section-title {
   margin: 34rpx 0 18rpx;
   color: #151c1a;
   font-size: 32rpx;
   font-weight: 800;
+}
+
+/* 快捷入口菜单 */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28rpx;
+}
+
+.menu-item:active {
+  background: rgba(237, 229, 216, 0.6);
+}
+
+.menu-label {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  color: #151c1a;
+  font-size: 28rpx;
+  font-weight: 700;
+}
+
+.menu-arrow {
+  color: #7c827d;
+  font-size: 34rpx;
+  font-weight: 300;
+}
+
+.badge {
+  min-width: 36rpx;
+  height: 36rpx;
+  padding: 0 10rpx;
+  background: #a94134;
+  color: #ffffff;
+  font-size: 20rpx;
+  font-weight: 800;
+  border-radius: 999rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .registration-list {
