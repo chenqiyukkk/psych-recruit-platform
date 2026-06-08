@@ -3,7 +3,8 @@
     "pages/home/index",
     "pages/experiment-detail/index",
     "pages/profile/index",
-    "pages/notifications/index"
+    "pages/notifications/index",
+    "pages/appeals/index"
   ],
   "window": {
     "navigationBarTitleText": "心试通",

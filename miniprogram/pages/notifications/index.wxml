@@ -10,7 +10,16 @@
   </view>
 
   <view class="notification-list">
-    <view wx:for="{{notifications}}" wx:key="id" class="notification-card panel">
+    <view
+      wx:for="{{notifications}}"
+      wx:key="id"
+      class="notification-card panel"
+      data-id="{{item.id}}"
+      data-isread="{{item.isRead}}"
+      data-relatedtype="{{item.relatedType}}"
+      data-relatedid="{{item.relatedId}}"
+      bindtap="onTapNotification"
+    >
       <view class="notification-top">
         <view class="notification-title">{{item.title}}</view>
         <view wx:if="{{!item.isRead}}" class="unread-dot"></view>
