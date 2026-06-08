@@ -11,8 +11,12 @@ Page({
     error: '',
   },
 
-  onLoad() {
+  onShow() {
     this.loadNotifications(true);
+  },
+
+  onPullDownRefresh() {
+    this.loadNotifications(true).finally(() => wx.stopPullDownRefresh());
   },
 
   onReachBottom() {
@@ -44,6 +48,35 @@ Page({
       .finally(() => {
         this.setData({ loading: false });
       });
+  },
+
+  onTapNotification(event) {
+    const { id, isread, relatedtype, relatedid } = event.currentTarget.dataset;
+
+    // 标记为已读
+    if (!isread) {
+      api.markNotificationRead(id).catch(() => {});
+      // 乐观更新本地状态
+      const list = this.data.notifications.map((item) => {
+        if (item.id === id) {
+          return Object.assign({}, item, { isRead: true });
+        }
+        return item;
+      });
+      this.setData({ notifications: list });
+    }
+
+    // 跳转到关联页面
+    if (relatedtype && relatedid) {
+      const routeMap = {
+        experiment: '/pages/experiment-detail/index',
+        // 更多关联页面路由可按业务扩展
+      };
+      const targetPath = routeMap[relatedtype];
+      if (targetPath) {
+        wx.navigateTo({ url: `${targetPath}?id=${relatedid}` });
+      }
+    }
   },
 
   markAllRead() {

@@ -1,0 +1,107 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24rpx;
+}
+
+.title {
+  color: #151c1a;
+  font-size: 38rpx;
+  font-weight: 800;
+}
+
+.appeal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.appeal-card {
+  padding: 28rpx;
+  transition: background 0.2s;
+}
+
+.appeal-card:active {
+  background: rgba(237, 229, 216, 0.6);
+}
+
+.appeal-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.appeal-type {
+  color: #151c1a;
+  font-size: 30rpx;
+  font-weight: 800;
+  flex: 1;
+}
+
+.appeal-reason {
+  margin-top: 14rpx;
+  color: #4d5854;
+  font-size: 26rpx;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.appeal-meta {
+  margin-top: 16rpx;
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+}
+
+.appeal-time {
+  color: #7c827d;
+  font-size: 23rpx;
+}
+
+.appeal-comment {
+  color: #075e56;
+  font-size: 22rpx;
+  font-weight: 700;
+  background: #dcefeb;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+}
+
+.loading {
+  padding: 30rpx 0;
+  text-align: center;
+  color: #68736f;
+  font-size: 26rpx;
+}
+
+/* 浮动按钮 */
+.fab {
+  position: fixed;
+  right: 36rpx;
+  bottom: 160rpx;
+  width: 96rpx;
+  height: 96rpx;
+  background: #075e56;
+  border-radius: 50%;
+  box-shadow: 0 14rpx 32rpx rgba(7, 94, 86, 0.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.fab-icon {
+  color: #ffffff;
+  font-size: 44rpx;
+  line-height: 1;
+}
+
+.fab:active {
+  background: #044a43;
+  transform: scale(0.94);
+}
