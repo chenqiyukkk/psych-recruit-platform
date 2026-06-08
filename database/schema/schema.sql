@@ -63,6 +63,7 @@ CREATE TABLE experiments (
   title VARCHAR(200) NOT NULL COMMENT '实验标题',
   description TEXT DEFAULT NULL COMMENT '实验描述',
   location VARCHAR(255) DEFAULT NULL COMMENT '地点/线上链接说明',
+  participant_limit INT UNSIGNED DEFAULT NULL COMMENT '实验人数上限',
   start_time DATETIME NOT NULL COMMENT '开始时间',
   end_time DATETIME NOT NULL COMMENT '结束时间',
   ethics_approval_no VARCHAR(128) DEFAULT NULL COMMENT '伦理审批编号',

@@ -119,3 +119,29 @@ test('mini program exposes an appeal page backed by appeal APIs', () => {
   assert.match(requestSource, /getMyAppeals/);
   assert.match(requestSource, /createAppeal/);
 });
+
+test('home page uses a soft hero and centered filter button', () => {
+  const homeWxss = fs.readFileSync(path.join(__dirname, '../pages/home/index.wxss'), 'utf8');
+  const heroBlock = homeWxss.match(/\.hero\s*\{[\s\S]*?\n\}/)[0];
+  const searchButtonBlock = homeWxss.match(/\.search-button\s*\{[\s\S]*?\n\}/)[0];
+
+  assert.doesNotMatch(heroBlock, /#075e56|rgba\(7,\s*94,\s*86/);
+  assert.match(heroBlock, /#ffffff/);
+  assert.match(searchButtonBlock, /display:\s*flex/);
+  assert.match(searchButtonBlock, /align-items:\s*center/);
+  assert.match(searchButtonBlock, /justify-content:\s*center/);
+});
+
+test('appeal form selects from completed experiments instead of typing an id', () => {
+  const appealWxml = fs.readFileSync(
+    path.join(__dirname, '../pages/appeals/index.wxml'),
+    'utf8'
+  );
+  const appealSource = fs.readFileSync(path.join(__dirname, '../pages/appeals/index.js'), 'utf8');
+
+  assert.match(appealWxml, /选择已完成实验/);
+  assert.doesNotMatch(appealWxml, /关联记录ID/);
+  assert.match(appealSource, /getRegistrations/);
+  assert.match(appealSource, /isCompleted/);
+  assert.match(appealSource, /selected\.experimentId/);
+});

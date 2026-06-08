@@ -30,6 +30,9 @@ public class Experiment {
   @Column(length = 255)
   private String location;
 
+  @Column
+  private Integer participantLimit;
+
   @Column(nullable = false)
   private LocalDateTime startTime;
 
@@ -69,4 +72,3 @@ public class Experiment {
   @Column(nullable = false)
   private LocalDateTime updatedAt;
 }
-

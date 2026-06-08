@@ -1,5 +1,5 @@
 const { api } = require('../../utils/request');
-const { formatAppeal } = require('../../utils/format');
+const { formatAppeal, formatRegistration } = require('../../utils/format');
 
 const appealTypes = [
   { label: '信誉扣分', value: 'REPUTATION_DEDUCTION' },
@@ -7,11 +7,22 @@ const appealTypes = [
   { label: '支付争议', value: 'PAYMENT_DISPUTE' },
 ];
 
+function formatCompletedExperiment(registration, experiment) {
+  const title = experiment ? experiment.title : `实验 #${registration.experimentId}`;
+  return Object.assign({}, registration, {
+    experimentTitle: title,
+    experimentLocation: experiment ? experiment.location : '',
+    pickerText: `${title} · #${registration.experimentId}`,
+  });
+}
+
 Page({
   data: {
     appealTypes,
     typeIndex: 0,
-    targetId: '',
+    experimentIndex: -1,
+    completedExperiments: [],
+    completedExperimentOptions: [],
     reason: '',
     evidenceUrls: '',
     appeals: [],
@@ -22,12 +33,12 @@ Page({
 
   onLoad() {
     if (this.ensureLogin()) {
-      this.loadAppeals();
+      this.loadPageData();
     }
   },
 
   onPullDownRefresh() {
-    this.loadAppeals().finally(() => wx.stopPullDownRefresh());
+    this.loadPageData().finally(() => wx.stopPullDownRefresh());
   },
 
   ensureLogin() {
@@ -43,8 +54,8 @@ Page({
     this.setData({ typeIndex: Number(event.detail.value) });
   },
 
-  onTargetInput(event) {
-    this.setData({ targetId: event.detail.value });
+  onExperimentChange(event) {
+    this.setData({ experimentIndex: Number(event.detail.value) });
   },
 
   onReasonInput(event) {
@@ -55,23 +66,58 @@ Page({
     this.setData({ evidenceUrls: event.detail.value });
   },
 
-  loadAppeals() {
+  loadPageData() {
     if (!this.ensureLogin()) {
       return Promise.resolve();
     }
 
     this.setData({ loading: true, error: '' });
-    return api
-      .getMyAppeals()
-      .then((appeals) => {
-        this.setData({ appeals: (Array.isArray(appeals) ? appeals : []).map(formatAppeal) });
-      })
+    return Promise.all([this.loadAppeals(), this.loadCompletedExperiments()])
       .catch((error) => {
-        this.setData({ error: error.message || '申诉记录加载失败' });
+        this.setData({ error: error.message || '申诉页面加载失败' });
       })
       .finally(() => {
         this.setData({ loading: false });
       });
+  },
+
+  loadAppeals() {
+    return api.getMyAppeals().then((appeals) => {
+      this.setData({ appeals: (Array.isArray(appeals) ? appeals : []).map(formatAppeal) });
+    });
+  },
+
+  loadCompletedExperiments() {
+    return api.getRegistrations().then((registrations) => {
+      const completed = (Array.isArray(registrations) ? registrations : [])
+        .map(formatRegistration)
+        .filter((item) => item.isCompleted && item.experimentId);
+      const ids = Array.from(new Set(completed.map((item) => item.experimentId)));
+
+      return Promise.all(
+        ids.map((id) =>
+          api
+            .getExperiment(id)
+            .then((experiment) => [id, experiment])
+            .catch(() => [id, null])
+        )
+      ).then((pairs) => {
+        const experimentMap = pairs.reduce((map, pair) => {
+          const [id, experiment] = pair;
+          map[id] = experiment;
+          return map;
+        }, {});
+        const completedExperiments = completed.map((item) =>
+          formatCompletedExperiment(item, experimentMap[item.experimentId])
+        );
+
+        this.setData({
+          completedExperiments,
+          completedExperimentOptions: completedExperiments.map((item) => item.pickerText),
+          experimentIndex: completedExperiments.length ? Math.max(this.data.experimentIndex, 0) : -1,
+        });
+      });
+    });
   },
 
   buildEvidenceUrls() {
@@ -93,10 +139,10 @@ Page({
       return;
     }
 
-    const targetId = Number(this.data.targetId);
+    const selected = this.data.completedExperiments[this.data.experimentIndex];
     const reason = this.data.reason.trim();
-    if (!targetId) {
-      wx.showToast({ title: '请输入关联记录ID', icon: 'none' });
+    if (!selected) {
+      wx.showToast({ title: '请选择已完成实验', icon: 'none' });
       return;
     }
     if (reason.length < 10) {
@@ -109,13 +155,13 @@ Page({
     api
       .createAppeal({
         appealType,
-        targetId,
+        targetId: selected.experimentId,
         reason,
         evidenceUrls: this.buildEvidenceUrls(),
       })
       .then(() => {
         wx.showToast({ title: '申诉已提交', icon: 'success' });
-        this.setData({ targetId: '', reason: '', evidenceUrls: '' });
+        this.setData({ reason: '', evidenceUrls: '' });
         return this.loadAppeals();
       })
       .catch((error) => {
@@ -124,5 +170,26 @@ Page({
       .finally(() => {
         this.setData({ submitting: false });
       });
+  },
+
+  onTapAppeal(event) {
+    const appeal = event.currentTarget.dataset.appeal;
+    const content = [
+      `申诉类型：${appeal.appealTypeText}`,
+      `关联实验：#${appeal.targetId}`,
+      `提交时间：${appeal.createdAtText}`,
+      `申诉理由：${appeal.reason || '无'}`,
+      `当前状态：${appeal.statusText}`,
+      appeal.reviewComment ? `审核意见：${appeal.reviewComment}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    wx.showModal({
+      title: '申诉详情',
+      content,
+      showCancel: false,
+      confirmText: '知道了',
+    });
   },
 });

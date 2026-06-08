@@ -56,13 +56,18 @@
       </view>
     </view>
 
-    <view wx:if="{{profile}}" class="quick-actions">
-      <view class="quick-card panel" bindtap="openAppeals">
-        <view>
-          <view class="quick-title">我的申诉</view>
-          <view class="quick-desc">提交争议说明，查看处理进度</view>
+    <view class="section-title">快捷入口</view>
+    <view class="menu-list">
+      <view class="menu-item panel" bindtap="openNotifications">
+        <view class="menu-label">
+          消息通知
+          <view wx:if="{{unreadCount > 0}}" class="badge">{{unreadCount}}</view>
         </view>
-        <view class="quick-arrow">›</view>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item panel" bindtap="openAppeals">
+        <view class="menu-label">我的申诉</view>
+        <text class="menu-arrow">›</text>
       </view>
     </view>
 

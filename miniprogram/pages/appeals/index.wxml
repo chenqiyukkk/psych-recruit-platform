@@ -2,7 +2,7 @@
   <view class="appeal-head">
     <view class="appeal-kicker">APPEAL</view>
     <view class="appeal-title">我的申诉</view>
-    <view class="appeal-subtitle">针对信誉扣分、低评分或支付争议提交说明，并跟踪处理状态。</view>
+    <view class="appeal-subtitle">从已完成实验中选择争议对象，提交说明后跟踪处理状态。</view>
   </view>
 
   <view class="form-panel panel">
@@ -13,14 +13,17 @@
       <view class="picker-field">{{appealTypes[typeIndex].label}}</view>
     </picker>
 
-    <view class="field-label">关联记录ID</view>
-    <input
-      class="form-input"
-      type="number"
-      value="{{targetId}}"
-      placeholder="如评价ID、支付记录ID或信誉记录ID"
-      bindinput="onTargetInput"
-    />
+    <view class="field-label">选择已完成实验</view>
+    <picker
+      range="{{completedExperimentOptions}}"
+      value="{{experimentIndex}}"
+      disabled="{{completedExperimentOptions.length === 0}}"
+      bindchange="onExperimentChange"
+    >
+      <view class="picker-field {{completedExperimentOptions.length === 0 ? 'placeholder' : ''}}">
+        {{completedExperimentOptions.length ? completedExperimentOptions[experimentIndex] : '暂无已完成实验可申诉'}}
+      </view>
+    </picker>
 
     <view class="field-label">申诉理由</view>
     <textarea
@@ -52,17 +55,25 @@
   </view>
 
   <view class="appeal-list">
-    <view wx:for="{{appeals}}" wx:key="id" class="appeal-card panel">
+    <view
+      wx:for="{{appeals}}"
+      wx:key="id"
+      class="appeal-card panel"
+      data-appeal="{{item}}"
+      bindtap="onTapAppeal"
+    >
       <view class="appeal-card-top">
         <view>
           <view class="appeal-type">{{item.appealTypeText}}</view>
-          <view class="appeal-target">关联记录 #{{item.targetId}}</view>
+          <view class="appeal-target">关联实验 #{{item.targetId}}</view>
         </view>
         <view class="status status-{{item.statusClassName}}">{{item.statusText}}</view>
       </view>
-      <view class="appeal-reason">{{item.reason}}</view>
-      <view wx:if="{{item.reviewComment}}" class="review-comment">审核意见：{{item.reviewComment}}</view>
-      <view class="appeal-time">{{item.createdAtText}}</view>
+      <view class="appeal-reason">{{item.reason || '无'}}</view>
+      <view class="appeal-meta">
+        <text class="appeal-time">{{item.createdAtText}}</text>
+        <text wx:if="{{item.reviewComment}}" class="appeal-comment">已回复</text>
+      </view>
     </view>
   </view>
 

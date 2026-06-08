@@ -65,6 +65,7 @@ class RegistrationConflictIntegrationTest extends IntegrationTestSupport {
     request.setTitle(title);
     request.setDescription("用于互斥规则集成测试的实验");
     request.setLocation("心理学院 102 室");
+    request.setParticipantLimit(10);
     request.setStartTime(startTime);
     request.setEndTime(endTime);
     request.setEthicsApprovalNo("IRB-CONFLICT-2026-001");
@@ -81,6 +82,6 @@ class RegistrationConflictIntegrationTest extends IntegrationTestSupport {
 
     ExperimentResponse created = experimentService.create(request, organizerUsername);
     experimentService.publish(created.getId(), organizerUsername);
-    return experimentService.getById(created.getId());
+    return experimentService.getById(created.getId(), organizerUsername);
   }
 }

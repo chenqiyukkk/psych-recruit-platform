@@ -45,9 +45,10 @@ button {
 }
 
 .primary-button {
-  background: #0b6f62;
-  color: #ffffff;
-  box-shadow: 0 14rpx 26rpx rgba(11, 111, 98, 0.22);
+  background: #e3efe7;
+  color: #1f3b33;
+  border: 1rpx solid #c9dcd1;
+  box-shadow: 0 12rpx 24rpx rgba(22, 63, 51, 0.08);
 }
 
 .ghost-button {
