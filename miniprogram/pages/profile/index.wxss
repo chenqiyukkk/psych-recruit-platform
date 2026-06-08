@@ -127,6 +127,37 @@
   font-size: 22rpx;
 }
 
+.quick-actions {
+  margin-top: 22rpx;
+}
+
+.quick-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24rpx;
+  padding: 28rpx 30rpx;
+}
+
+.quick-title {
+  color: #151c1a;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.quick-desc {
+  margin-top: 8rpx;
+  color: #68736f;
+  font-size: 24rpx;
+}
+
+.quick-arrow {
+  color: #0b6f62;
+  font-size: 46rpx;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .section-title {
   margin: 34rpx 0 18rpx;
   color: #151c1a;

@@ -1,96 +1,195 @@
 const { api } = require('../../utils/request');
-const { formatDateTime } = require('../../utils/format');
+const { formatAppeal, formatRegistration } = require('../../utils/format');
 
-// 申诉类型文本映射（与后端 ENUM 对齐）
-var APPEAL_TYPE_MAP = {
-  REPUTATION_DEDUCTION: '信誉扣分申诉',
-  LOW_RATING: '低评分申诉',
-  PAYMENT_DISPUTE: '支付争议申诉',
-};
+const appealTypes = [
+  { label: '信誉扣分', value: 'REPUTATION_DEDUCTION' },
+  { label: '低评分', value: 'LOW_RATING' },
+  { label: '支付争议', value: 'PAYMENT_DISPUTE' },
+];
 
-// 申诉状态文本及样式映射
-var APPEAL_STATUS_MAP = {
-  PENDING: { text: '待审核', className: 'status-warning' },
-  UNDER_REVIEW: { text: '审核中', className: 'status-warning' },
-  APPROVED: { text: '已通过', className: 'status-success' },
-  REJECTED: { text: '已拒绝', className: 'status-danger' },
-};
-
-function formatAppeal(item) {
-  var typeText = APPEAL_TYPE_MAP[item.appealType] || item.appealType || '未知类型';
-  var statusMeta = APPEAL_STATUS_MAP[item.status] || { text: item.status || '未知', className: 'status-muted' };
-
-  return Object.assign({}, item, {
-    createdAtText: formatDateTime(item.createdAt),
-    reviewedAtText: formatDateTime(item.reviewedAt),
-    typeText: typeText,
-    statusText: statusMeta.text,
-    statusClassName: statusMeta.className,
+function formatCompletedExperiment(registration, experiment) {
+  const title = experiment ? experiment.title : `实验 #${registration.experimentId}`;
+  return Object.assign({}, registration, {
+    experimentTitle: title,
+    experimentLocation: experiment ? experiment.location : '',
+    pickerText: `${title} · #${registration.experimentId}`,
   });
 }
 
 Page({
   data: {
+    appealTypes,
+    typeIndex: 0,
+    experimentIndex: -1,
+    completedExperiments: [],
+    completedExperimentOptions: [],
+    reason: '',
+    evidenceUrls: '',
     appeals: [],
     loading: false,
+    submitting: false,
     error: '',
   },
 
-  onShow() {
-    this.loadAppeals();
+  onLoad() {
+    if (this.ensureLogin()) {
+      this.loadPageData();
+    }
   },
 
   onPullDownRefresh() {
-    this.loadAppeals().finally(function () {
-      wx.stopPullDownRefresh();
-    });
+    this.loadPageData().finally(() => wx.stopPullDownRefresh());
+  },
+
+  ensureLogin() {
+    if (!getApp().getToken()) {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      wx.switchTab({ url: '/pages/profile/index' });
+      return false;
+    }
+    return true;
+  },
+
+  onTypeChange(event) {
+    this.setData({ typeIndex: Number(event.detail.value) });
+  },
+
+  onExperimentChange(event) {
+    this.setData({ experimentIndex: Number(event.detail.value) });
+  },
+
+  onReasonInput(event) {
+    this.setData({ reason: event.detail.value });
+  },
+
+  onEvidenceInput(event) {
+    this.setData({ evidenceUrls: event.detail.value });
+  },
+
+  loadPageData() {
+    if (!this.ensureLogin()) {
+      return Promise.resolve();
+    }
+
+    this.setData({ loading: true, error: '' });
+    return Promise.all([this.loadAppeals(), this.loadCompletedExperiments()])
+      .catch((error) => {
+        this.setData({ error: error.message || '申诉页面加载失败' });
+      })
+      .finally(() => {
+        this.setData({ loading: false });
+      });
   },
 
   loadAppeals() {
-    this.setData({ loading: true, error: '' });
-
-    return api
-      .getMyAppeals()
-      .then(function (list) {
-        var appeals = (Array.isArray(list) ? list : []).map(formatAppeal);
-        this.setData({ appeals: appeals });
-      }.bind(this))
-      .catch(function (error) {
-        this.setData({ error: error.message || '申诉记录加载失败' });
-      }.bind(this))
-      .finally(function () {
-        this.setData({ loading: false });
-      }.bind(this));
-  },
-
-  onTapAppeal(event) {
-    var appeal = event.currentTarget.dataset.appeal;
-    // 点击查看申诉详情 — 显示审核意见等更多信息
-    var statusMeta = APPEAL_STATUS_MAP[appeal.status] || { text: appeal.status };
-    var typeText = APPEAL_TYPE_MAP[appeal.appealType] || appeal.appealType;
-
-    var content = '申诉类型：' + typeText;
-    content += '\n提交时间：' + appeal.createdAtText;
-    content += '\n申诉理由：' + (appeal.reason || '无');
-    content += '\n当前状态：' + statusMeta.text;
-
-    if (appeal.reviewComment) {
-      content += '\n审核意见：' + appeal.reviewComment;
-    }
-    if (appeal.reviewedAtText) {
-      content += '\n审核时间：' + appeal.reviewedAtText;
-    }
-
-    wx.showModal({
-      title: '申诉详情',
-      content: content,
-      showCancel: false,
-      confirmText: '知道了',
+    return api.getMyAppeals().then((appeals) => {
+      this.setData({ appeals: (Array.isArray(appeals) ? appeals : []).map(formatAppeal) });
     });
   },
 
-  onNewAppeal() {
-    // 跳转到发起申诉页面（由成员4实现）
-    wx.navigateTo({ url: '/pages/appeal/index' });
+  loadCompletedExperiments() {
+    return api.getRegistrations().then((registrations) => {
+      const completed = (Array.isArray(registrations) ? registrations : [])
+        .map(formatRegistration)
+        .filter((item) => item.isCompleted && item.experimentId);
+      const ids = Array.from(new Set(completed.map((item) => item.experimentId)));
+
+      return Promise.all(
+        ids.map((id) =>
+          api
+            .getExperiment(id)
+            .then((experiment) => [id, experiment])
+            .catch(() => [id, null])
+        )
+      ).then((pairs) => {
+        const experimentMap = pairs.reduce((map, pair) => {
+          const [id, experiment] = pair;
+          map[id] = experiment;
+          return map;
+        }, {});
+        const completedExperiments = completed.map((item) =>
+          formatCompletedExperiment(item, experimentMap[item.experimentId])
+        );
+
+        this.setData({
+          completedExperiments,
+          completedExperimentOptions: completedExperiments.map((item) => item.pickerText),
+          experimentIndex: completedExperiments.length ? Math.max(this.data.experimentIndex, 0) : -1,
+        });
+      });
+    });
+  },
+
+  buildEvidenceUrls() {
+    const value = this.data.evidenceUrls.trim();
+    if (!value) {
+      return '';
+    }
+
+    return JSON.stringify(
+      value
+        .split(/\n|,|，/)
+        .map((url) => url.trim())
+        .filter(Boolean)
+    );
+  },
+
+  submitAppeal() {
+    if (!this.ensureLogin() || this.data.submitting) {
+      return;
+    }
+
+    const selected = this.data.completedExperiments[this.data.experimentIndex];
+    const reason = this.data.reason.trim();
+    if (!selected) {
+      wx.showToast({ title: '请选择已完成实验', icon: 'none' });
+      return;
+    }
+    if (reason.length < 10) {
+      wx.showToast({ title: '申诉理由至少10字', icon: 'none' });
+      return;
+    }
+
+    const appealType = this.data.appealTypes[this.data.typeIndex].value;
+    this.setData({ submitting: true });
+    api
+      .createAppeal({
+        appealType,
+        targetId: selected.experimentId,
+        reason,
+        evidenceUrls: this.buildEvidenceUrls(),
+      })
+      .then(() => {
+        wx.showToast({ title: '申诉已提交', icon: 'success' });
+        this.setData({ reason: '', evidenceUrls: '' });
+        return this.loadAppeals();
+      })
+      .catch((error) => {
+        wx.showToast({ title: error.message || '提交失败', icon: 'none' });
+      })
+      .finally(() => {
+        this.setData({ submitting: false });
+      });
+  },
+
+  onTapAppeal(event) {
+    const appeal = event.currentTarget.dataset.appeal;
+    const content = [
+      `申诉类型：${appeal.appealTypeText}`,
+      `关联实验：#${appeal.targetId}`,
+      `提交时间：${appeal.createdAtText}`,
+      `申诉理由：${appeal.reason || '无'}`,
+      `当前状态：${appeal.statusText}`,
+      appeal.reviewComment ? `审核意见：${appeal.reviewComment}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    wx.showModal({
+      title: '申诉详情',
+      content,
+      showCancel: false,
+      confirmText: '知道了',
+    });
   },
 });
