@@ -26,8 +26,7 @@
 
       <section
         v-if="authStore.isResearcher"
-        class="metric-card"
-        style="background: linear-gradient(135deg, #0f766e, #0ea5e9)"
+        class="metric-card metric-card--teal"
       >
         <div class="metric-card__label">信誉分</div>
         <div class="metric-card__value">{{ authStore.profile?.reputationScore ?? '--' }}</div>
@@ -36,8 +35,7 @@
 
       <section
         v-if="authStore.isResearcher"
-        class="metric-card"
-        style="background: linear-gradient(135deg, #7c3aed, #2563eb)"
+        class="metric-card metric-card--purple"
       >
         <div class="metric-card__label">研究者评分</div>
         <div class="metric-card__value">{{ authStore.profile?.researcherRating ?? '--' }}</div>
@@ -46,8 +44,7 @@
 
       <section
         v-if="authStore.isAdmin"
-        class="metric-card"
-        style="background: linear-gradient(135deg, #0f766e, #0ea5e9)"
+        class="metric-card metric-card--teal"
       >
         <div class="metric-card__label">平台用户数</div>
         <div class="metric-card__value">{{ summary?.userCount ?? '--' }}</div>
@@ -56,8 +53,7 @@
 
       <section
         v-if="authStore.isAdmin"
-        class="metric-card"
-        style="background: linear-gradient(135deg, #7c3aed, #2563eb)"
+        class="metric-card metric-card--purple"
       >
         <div class="metric-card__label">待处理申诉</div>
         <div class="metric-card__value">{{ pendingAppeals }}</div>
@@ -261,12 +257,12 @@ onMounted(() => {
   border-radius: 22px;
   padding: 22px;
   min-height: 170px;
-  background: linear-gradient(135deg, rgba(37, 99, 235, 0.12), rgba(15, 23, 42, 0.04));
+  background: #eff6ff;
   border: 1px solid rgba(59, 130, 246, 0.12);
 }
 
 .focus-card--secondary {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(15, 118, 110, 0.08));
+  background: #f0fdfa;
 }
 
 .focus-card__label {
