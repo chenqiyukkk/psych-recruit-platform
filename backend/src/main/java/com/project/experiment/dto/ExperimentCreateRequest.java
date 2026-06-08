@@ -3,6 +3,7 @@ package com.project.experiment.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -12,6 +13,7 @@ public class ExperimentCreateRequest {
   @NotBlank private String title;
   private String description;
   private String location;
+  @NotNull @Min(1) private Integer participantLimit;
 
   @NotNull private LocalDateTime startTime;
   @NotNull private LocalDateTime endTime;
@@ -28,4 +30,3 @@ public class ExperimentCreateRequest {
 
   private List<ExperimentTagRequest> tags;
 }
-

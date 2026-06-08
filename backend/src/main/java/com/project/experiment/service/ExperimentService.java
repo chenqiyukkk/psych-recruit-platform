@@ -14,6 +14,7 @@ import com.project.experiment.entity.ExperimentTag;
 import com.project.experiment.repo.ExperimentRepository;
 import com.project.experiment.repo.ExperimentTagRepository;
 import com.project.user.UserRoles;
+import com.project.user.entity.User;
 import com.project.user.repo.UserRepository;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -50,13 +51,20 @@ public class ExperimentService {
       throw new ApiException(403, "仅研究者可创建实验");
     }
 
-    validateCreateOrUpdate(request.getRiskLevel(), request.getPaymentMethod(), request.getStartTime(), request.getEndTime(),
-        request.getScreeningCriteria(), request.getExcludeTags());
+    validateCreateOrUpdate(
+        request.getParticipantLimit(),
+        request.getRiskLevel(),
+        request.getPaymentMethod(),
+        request.getStartTime(),
+        request.getEndTime(),
+        request.getScreeningCriteria(),
+        request.getExcludeTags());
 
     Experiment experiment = new Experiment();
     experiment.setTitle(request.getTitle());
     experiment.setDescription(request.getDescription());
     experiment.setLocation(request.getLocation());
+    experiment.setParticipantLimit(request.getParticipantLimit());
     experiment.setStartTime(request.getStartTime());
     experiment.setEndTime(request.getEndTime());
     experiment.setEthicsApprovalNo(request.getEthicsApprovalNo());
@@ -74,7 +82,7 @@ public class ExperimentService {
     Experiment saved = experimentRepository.save(experiment);
 
     replaceTags(saved.getId(), request.getTags());
-    return getById(saved.getId());
+    return getById(saved.getId(), organizerUsername);
   }
 
   @Transactional
@@ -87,8 +95,14 @@ public class ExperimentService {
       throw new ApiException(400, "仅草稿状态可编辑");
     }
 
-    validateCreateOrUpdate(request.getRiskLevel(), request.getPaymentMethod(), request.getStartTime(), request.getEndTime(),
-        request.getScreeningCriteria(), request.getExcludeTags());
+    validateCreateOrUpdate(
+        request.getParticipantLimit(),
+        request.getRiskLevel(),
+        request.getPaymentMethod(),
+        request.getStartTime(),
+        request.getEndTime(),
+        request.getScreeningCriteria(),
+        request.getExcludeTags());
 
     if (request.getTitle() != null) {
       experiment.setTitle(request.getTitle());
@@ -98,6 +112,9 @@ public class ExperimentService {
     }
     if (request.getLocation() != null) {
       experiment.setLocation(request.getLocation());
+    }
+    if (request.getParticipantLimit() != null) {
+      experiment.setParticipantLimit(request.getParticipantLimit());
     }
     if (request.getStartTime() != null) {
       experiment.setStartTime(request.getStartTime());
@@ -133,7 +150,7 @@ public class ExperimentService {
       replaceTags(id, request.getTags());
     }
 
-    return getById(id);
+    return getById(id, operatorUsername);
   }
 
   @Transactional
@@ -147,8 +164,9 @@ public class ExperimentService {
     experimentRepository.deleteById(id);
   }
 
-  public ExperimentResponse getById(Long id) {
+  public ExperimentResponse getById(Long id, String requesterUsername) {
     Experiment experiment = experimentRepository.findById(id).orElseThrow(() -> new ApiException(404, "实验不存在"));
+    assertOperatorCanView(experiment, requesterUsername);
     List<ExperimentTagResponse> tags =
         experimentTagRepository.findByExperimentId(id).stream()
             .map(t -> new ExperimentTagResponse(t.getId(), t.getTagName(), t.getCoolingDays()))
@@ -156,9 +174,11 @@ public class ExperimentService {
     return toResponse(experiment, tags);
   }
 
-  public Page<ExperimentResponse> query(ExperimentQueryRequest query, int page, int size) {
+  public Page<ExperimentResponse> query(
+      ExperimentQueryRequest query, int page, int size, String requesterUsername) {
+    User requester = getUserByUsername(requesterUsername);
     Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-    Specification<Experiment> spec = buildSpec(query);
+    Specification<Experiment> spec = buildSpec(query, requester);
     return experimentRepository.findAll(spec, pageable).map(e -> toResponse(e, Collections.emptyList()));
   }
 
@@ -207,8 +227,7 @@ public class ExperimentService {
   }
 
   private void assertOperatorCanManage(Experiment experiment, String operatorUsername) {
-    var operator =
-        userRepository.findByUsername(operatorUsername).orElseThrow(() -> new ApiException(401, "未登录"));
+    var operator = getUserByUsername(operatorUsername);
     if (Objects.equals(operator.getRole(), UserRoles.ADMIN)) {
       return;
     }
@@ -220,13 +239,27 @@ public class ExperimentService {
     }
   }
 
+  private void assertOperatorCanView(Experiment experiment, String requesterUsername) {
+    User requester = getUserByUsername(requesterUsername);
+    if (!Objects.equals(requester.getRole(), UserRoles.RESEARCHER)) {
+      return;
+    }
+    if (!Objects.equals(experiment.getOrganizerId(), requester.getId())) {
+      throw new ApiException(403, "研究者只能查看自己创建的实验");
+    }
+  }
+
   private void validateCreateOrUpdate(
+      Integer participantLimit,
       String riskLevel,
       String paymentMethod,
       LocalDateTime startTime,
       LocalDateTime endTime,
       String screeningCriteriaJson,
       String excludeTagsJson) {
+    if (participantLimit != null && participantLimit < 1) {
+      throw new ApiException(400, "participantLimit 必须大于 0");
+    }
     if (riskLevel != null && !ExperimentConstants.RISK_LEVELS.contains(riskLevel)) {
       throw new ApiException(400, "riskLevel 不合法");
     }
@@ -256,10 +289,13 @@ public class ExperimentService {
     }
   }
 
-  private Specification<Experiment> buildSpec(ExperimentQueryRequest q) {
+  private Specification<Experiment> buildSpec(ExperimentQueryRequest q, User requester) {
     return (root, query, cb) -> {
       var predicates = new java.util.ArrayList<javax.persistence.criteria.Predicate>();
       if (q == null) {
+        if (Objects.equals(requester.getRole(), UserRoles.RESEARCHER)) {
+          predicates.add(cb.equal(root.get("organizerId"), requester.getId()));
+        }
         return cb.and(predicates.toArray(new javax.persistence.criteria.Predicate[0]));
       }
       if (StringUtils.hasText(q.getKeyword())) {
@@ -275,7 +311,9 @@ public class ExperimentService {
       if (StringUtils.hasText(q.getPaymentMethod())) {
         predicates.add(cb.equal(root.get("paymentMethod"), q.getPaymentMethod().trim()));
       }
-      if (q.getOrganizerId() != null) {
+      if (Objects.equals(requester.getRole(), UserRoles.RESEARCHER)) {
+        predicates.add(cb.equal(root.get("organizerId"), requester.getId()));
+      } else if (q.getOrganizerId() != null) {
         predicates.add(cb.equal(root.get("organizerId"), q.getOrganizerId()));
       }
       if (q.getStartFrom() != null) {
@@ -294,6 +332,7 @@ public class ExperimentService {
         e.getTitle(),
         e.getDescription(),
         e.getLocation(),
+        e.getParticipantLimit(),
         e.getStartTime(),
         e.getEndTime(),
         e.getEthicsApprovalNo(),
@@ -316,5 +355,9 @@ public class ExperimentService {
     }
     String t = s.trim();
     return t.isEmpty() ? null : t;
+  }
+
+  private User getUserByUsername(String username) {
+    return userRepository.findByUsername(username).orElseThrow(() -> new ApiException(401, "未登录"));
   }
 }

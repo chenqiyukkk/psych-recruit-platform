@@ -13,6 +13,7 @@ public class ExperimentResponse {
   private String title;
   private String description;
   private String location;
+  private Integer participantLimit;
   private LocalDateTime startTime;
   private LocalDateTime endTime;
   private String ethicsApprovalNo;
@@ -28,4 +29,3 @@ public class ExperimentResponse {
   private LocalDateTime updatedAt;
   private List<ExperimentTagResponse> tags;
 }
-

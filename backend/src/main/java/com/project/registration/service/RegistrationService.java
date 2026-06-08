@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 
@@ -99,6 +100,17 @@ public class RegistrationService {
 
         if(!RegistrationConstants.STATUS_PENDING.equals(registration.getStatus())){
             throw new ApiException(400,"只有待审核报名可以通过");
+        }
+
+        Integer participantLimit = experiment.getParticipantLimit();
+        if (participantLimit != null) {
+            long occupiedSlots =
+                    registrationRepository.countByExperimentIdAndStatusIn(
+                            experiment.getId(),
+                            Set.of(RegistrationConstants.STATUS_APPROVED));
+            if (occupiedSlots >= participantLimit) {
+                throw new ApiException(400, "实验人数已满");
+            }
         }
 
         LocalDateTime now = LocalDateTime.now();
