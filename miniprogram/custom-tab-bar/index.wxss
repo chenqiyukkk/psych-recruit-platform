@@ -5,7 +5,7 @@
   left: 0;
   z-index: 999;
   padding: 16rpx 28rpx calc(16rpx + env(safe-area-inset-bottom));
-  background: linear-gradient(180deg, rgba(246, 241, 232, 0) 0%, #f6f1e8 34%);
+  background: linear-gradient(180deg, rgba(244, 247, 242, 0) 0%, #f4f7f2 34%);
 }
 
 .tab-bar {
@@ -14,10 +14,10 @@
   justify-content: space-between;
   height: 104rpx;
   padding: 10rpx;
-  border: 1rpx solid rgba(36, 31, 23, 0.08);
+  border: 1rpx solid rgba(18, 74, 60, 0.09);
   border-radius: 28rpx;
-  background: rgba(255, 253, 247, 0.96);
-  box-shadow: 0 18rpx 48rpx rgba(45, 37, 25, 0.16);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 18rpx 48rpx rgba(22, 63, 51, 0.14);
 }
 
 .tab-item {
@@ -29,12 +29,12 @@
   gap: 12rpx;
   height: 84rpx;
   border-radius: 22rpx;
-  color: #7c827d;
+  color: #6f7d76;
 }
 
 .tab-item.active {
   background: #e0eee9;
-  color: #075e56;
+  color: #0b6f62;
 }
 
 .tab-icon {

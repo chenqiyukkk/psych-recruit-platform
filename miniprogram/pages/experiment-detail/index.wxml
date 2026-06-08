@@ -30,12 +30,29 @@
 
     <view class="section panel">
       <view class="section-title">筛选条件</view>
-      <view class="section-content">{{experiment.screeningCriteria || '暂无额外筛选条件'}}</view>
+      <view wx:if="{{experiment.screeningCriteriaItems.length}}" class="criteria-list">
+        <view
+          wx:for="{{experiment.screeningCriteriaItems}}"
+          wx:key="label"
+          class="criteria-item"
+        >
+          <text class="criteria-label">{{item.label}}</text>
+          <text class="criteria-value">{{item.value}}</text>
+        </view>
+      </view>
+      <view wx:else class="section-content">暂无额外筛选条件</view>
     </view>
 
     <view class="section panel">
       <view class="section-title">排除标签</view>
-      <view class="section-content">{{experiment.excludeTags || '暂无排除标签'}}</view>
+      <view wx:if="{{experiment.excludeTagTexts.length}}" class="tag-list">
+        <text
+          wx:for="{{experiment.excludeTagTexts}}"
+          wx:key="*this"
+          class="exclude-tag"
+        >{{item}}</text>
+      </view>
+      <view wx:else class="section-content">暂无排除标签</view>
     </view>
 
     <view wx:if="{{experiment.paymentDescription}}" class="section panel">

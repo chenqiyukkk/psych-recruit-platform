@@ -1,0 +1,147 @@
+.appeals-page {
+  padding-top: 18rpx;
+}
+
+.appeal-head {
+  padding: 40rpx 34rpx 36rpx;
+  border-radius: 24rpx;
+  background:
+    linear-gradient(135deg, rgba(10, 69, 62, 0.98) 0%, rgba(20, 115, 96, 0.94) 72%, rgba(197, 133, 43, 0.86) 150%),
+    #0b6f62;
+  color: #ffffff;
+  box-shadow: 0 22rpx 48rpx rgba(16, 71, 58, 0.2);
+}
+
+.appeal-kicker {
+  color: #f5d58a;
+  font-size: 22rpx;
+  font-weight: 800;
+}
+
+.appeal-title {
+  margin-top: 16rpx;
+  font-size: 46rpx;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.appeal-subtitle {
+  margin-top: 14rpx;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 26rpx;
+  line-height: 1.6;
+}
+
+.form-panel {
+  margin-top: 24rpx;
+  padding: 30rpx;
+}
+
+.panel-title,
+.list-title {
+  color: #151c1a;
+  font-size: 32rpx;
+  font-weight: 800;
+}
+
+.field-label {
+  margin: 24rpx 0 12rpx;
+  color: #50615a;
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.picker-field,
+.form-input,
+.reason-input,
+.evidence-input {
+  width: 100%;
+  border: 1rpx solid #dce7df;
+  border-radius: 14rpx;
+  background: #f7fbf8;
+  color: #1f2a26;
+  font-size: 27rpx;
+}
+
+.picker-field,
+.form-input {
+  height: 84rpx;
+  padding: 0 22rpx;
+  line-height: 84rpx;
+}
+
+.reason-input,
+.evidence-input {
+  min-height: 150rpx;
+  padding: 20rpx 22rpx;
+  line-height: 1.55;
+}
+
+.evidence-input {
+  min-height: 112rpx;
+}
+
+.submit-button {
+  margin-top: 28rpx;
+}
+
+.list-title {
+  margin: 34rpx 0 18rpx;
+}
+
+.appeal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18rpx;
+}
+
+.appeal-card {
+  padding: 28rpx;
+}
+
+.appeal-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.appeal-type {
+  color: #151c1a;
+  font-size: 30rpx;
+  font-weight: 800;
+}
+
+.appeal-target {
+  margin-top: 8rpx;
+  color: #0b6f62;
+  font-size: 23rpx;
+  font-weight: 800;
+}
+
+.appeal-reason,
+.review-comment {
+  margin-top: 16rpx;
+  color: #52605a;
+  font-size: 26rpx;
+  line-height: 1.6;
+}
+
+.review-comment {
+  padding: 18rpx;
+  border-radius: 14rpx;
+  background: #f7fbf8;
+}
+
+.appeal-time {
+  margin-top: 14rpx;
+  color: #74817b;
+  font-size: 23rpx;
+}
+
+.loading {
+  padding: 30rpx 0;
+  text-align: center;
+  color: #68736f;
+  font-size: 26rpx;
+}
