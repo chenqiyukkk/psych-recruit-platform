@@ -122,6 +122,10 @@ const api = {
   getMyAppeals() {
     return request({ path: '/api/appeals/my' });
   },
+
+  createAppeal(data) {
+    return request({ path: '/api/appeals', method: 'POST', data });
+  },
 };
 
 module.exports = {

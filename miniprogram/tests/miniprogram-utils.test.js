@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { buildUrl, unwrapResult, normalizePageData } = require('../utils/request');
 const {
   formatDateTime,
+  formatExperiment,
   formatPayment,
   getExperimentStatusMeta,
   getRegistrationStatusMeta,
@@ -51,6 +52,24 @@ test('format helpers produce miniapp friendly labels', () => {
   assert.deepEqual(getRegistrationStatusMeta('APPROVED'), { text: '已通过', className: 'success' });
 });
 
+test('formatExperiment turns criteria JSON into readable participant requirements', () => {
+  const experiment = formatExperiment({
+    status: 'PUBLISHED',
+    paymentAmount: 25,
+    startTime: '2026-06-03T09:30:00',
+    endTime: '2026-06-03T10:30:00',
+    screeningCriteria: '{"include":{"gender":"FEMALE","age_range":[20,32]}}',
+    excludeTags: '["fMRI","发展类"]',
+  });
+
+  assert.deepEqual(experiment.screeningCriteriaItems, [
+    { label: '性别', value: '女' },
+    { label: '年龄', value: '20-32 岁' },
+  ]);
+  assert.deepEqual(experiment.excludeTagTexts, ['fMRI', '发展类']);
+  assert.doesNotMatch(experiment.screeningCriteriaText, /[{}[\]"]/);
+});
+
 test('profile page defaults to WeChat login with a test-account fallback', () => {
   const profileWxml = fs.readFileSync(
     path.join(__dirname, '../pages/profile/index.wxml'),
@@ -61,4 +80,43 @@ test('profile page defaults to WeChat login with a test-account fallback', () =>
   assert.match(profileWxml, /微信授权登录/);
   assert.match(profileWxml, /测试账号登录/);
   assert.match(requestSource, /wxLogin/);
+});
+
+test('appeal page supports creating an appeal without navigating to a missing page', () => {
+  const appealWxml = fs.readFileSync(
+    path.join(__dirname, '../pages/appeals/index.wxml'),
+    'utf8'
+  );
+  const appealSource = fs.readFileSync(path.join(__dirname, '../pages/appeals/index.js'), 'utf8');
+  const requestSource = fs.readFileSync(path.join(__dirname, '../utils/request.js'), 'utf8');
+
+  assert.match(appealWxml, /提交申诉/);
+  assert.match(appealWxml, /选择已完成实验/);
+  assert.doesNotMatch(appealSource, /\/pages\/appeal\/index/);
+  assert.match(appealSource, /getRegistrations/);
+  assert.match(appealSource, /selected\.experimentId/);
+  assert.match(requestSource, /createAppeal/);
+});
+
+test('member4 testing deliverables include report, cases, defects and postman collection', () => {
+  const report = fs.readFileSync(
+    path.join(__dirname, '../../docs/testing/成员4-软件测试与质量保证报告.md'),
+    'utf8'
+  );
+  const cases = fs.readFileSync(
+    path.join(__dirname, '../../docs/testing/成员4-测试用例与缺陷跟踪.md'),
+    'utf8'
+  );
+  const postman = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../../tests/postman/API接口测试集合.postman_collection.json'),
+      'utf8'
+    )
+  );
+
+  assert.match(report, /测试准出结论/);
+  assert.ok((cases.match(/TC-\d{3}/g) || []).length >= 50);
+  assert.ok((cases.match(/BUG-\d{3}/g) || []).length >= 10);
+  assert.ok(Array.isArray(postman.item));
+  assert.ok(postman.item.length >= 8);
 });
