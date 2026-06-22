@@ -145,3 +145,42 @@ test('appeal form selects from completed experiments instead of typing an id', (
   assert.match(appealSource, /isCompleted/);
   assert.match(appealSource, /selected\.experimentId/);
 });
+
+test('appeal page supports creating an appeal without navigating to a missing page', () => {
+  const appealWxml = fs.readFileSync(
+    path.join(__dirname, '../pages/appeals/index.wxml'),
+    'utf8'
+  );
+  const appealSource = fs.readFileSync(path.join(__dirname, '../pages/appeals/index.js'), 'utf8');
+  const requestSource = fs.readFileSync(path.join(__dirname, '../utils/request.js'), 'utf8');
+
+  assert.match(appealWxml, /提交申诉/);
+  assert.match(appealWxml, /选择已完成实验/);
+  assert.doesNotMatch(appealSource, /\/pages\/appeal\/index/);
+  assert.match(appealSource, /getRegistrations/);
+  assert.match(appealSource, /selected\.experimentId/);
+  assert.match(requestSource, /createAppeal/);
+});
+
+test('member4 testing deliverables include report, cases, defects and postman collection', () => {
+  const report = fs.readFileSync(
+    path.join(__dirname, '../../docs/testing/成员4-软件测试与质量保证报告.md'),
+    'utf8'
+  );
+  const cases = fs.readFileSync(
+    path.join(__dirname, '../../docs/testing/成员4-测试用例与缺陷跟踪.md'),
+    'utf8'
+  );
+  const postman = JSON.parse(
+    fs.readFileSync(
+      path.join(__dirname, '../../tests/postman/API接口测试集合.postman_collection.json'),
+      'utf8'
+    )
+  );
+
+  assert.match(report, /测试准出结论/);
+  assert.ok((cases.match(/TC-\d{3}/g) || []).length >= 50);
+  assert.ok((cases.match(/BUG-\d{3}/g) || []).length >= 10);
+  assert.ok(Array.isArray(postman.item));
+  assert.ok(postman.item.length >= 8);
+});

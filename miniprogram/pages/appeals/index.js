@@ -37,6 +37,12 @@ Page({
     }
   },
 
+  onShow() {
+    if (this.ensureLogin()) {
+      this.loadPageData();
+    }
+  },
+
   onPullDownRefresh() {
     this.loadPageData().finally(() => wx.stopPullDownRefresh());
   },

@@ -30,6 +30,8 @@ const genderMap = {
   UNKNOWN: '不限',
   ANY: '不限',
   ALL: '不限',
+  female: '女',
+  male: '男',
   女: '女',
   男: '男',
   不限: '不限',
@@ -47,6 +49,7 @@ const registrationStatusMap = {
   APPROVED: { text: '已通过', className: 'success' },
   REJECTED: { text: '未通过', className: 'danger' },
   CANCELLED: { text: '已取消', className: 'muted' },
+  COMPLETED: { text: '已完成', className: 'success' },
 };
 
 const appealTypeMap = {
@@ -256,6 +259,7 @@ function formatRegistration(item) {
     appliedAtText: formatDateTime(item.appliedAt),
     statusText: statusMeta.text,
     statusClassName: statusMeta.className,
+    isCompleted: item.isCompleted || item.status === 'COMPLETED',
   });
 }
 

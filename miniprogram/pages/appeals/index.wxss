@@ -128,21 +128,21 @@
 }
 
 .appeal-reason {
+  display: -webkit-box;
   margin-top: 16rpx;
+  overflow: hidden;
   color: #52605a;
   font-size: 26rpx;
   line-height: 1.6;
-  display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 .appeal-meta {
-  margin-top: 16rpx;
   display: flex;
-  align-items: center;
   gap: 18rpx;
+  align-items: center;
+  margin-top: 16rpx;
 }
 
 .appeal-time {
@@ -151,17 +151,17 @@
 }
 
 .appeal-comment {
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: #e8f1eb;
   color: #586f64;
   font-size: 22rpx;
   font-weight: 700;
-  background: #e8f1eb;
-  padding: 4rpx 14rpx;
-  border-radius: 999rpx;
 }
 
 .loading {
   padding: 30rpx 0;
-  text-align: center;
   color: #68736f;
   font-size: 26rpx;
+  text-align: center;
 }

@@ -1,0 +1,214 @@
+{
+  "info": {
+    "name": "心试通-成员4小程序验收接口测试集合",
+    "_postman_id": "6f7e8a1a-9c54-4b2c-9f6d-member4qa",
+    "description": "覆盖成员4小程序验收链路：登录、实验列表、详情、报名、通知、申诉。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "experimentId", "value": "1" },
+    { "key": "registrationId", "value": "1" },
+    { "key": "appealId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "01 登录并保存 token",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"mini_subject_0604\",\n  \"password\": \"Test123456\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/auth/login", "host": ["{{baseUrl}}"], "path": ["api", "auth", "login"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('登录成功', function () { pm.response.to.have.status(200); });",
+              "const data = pm.response.json().data || {};",
+              "pm.collectionVariables.set('token', data.token || '');",
+              "pm.expect(data.token).to.be.a('string').and.not.empty;"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 查询招募中实验列表",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{baseUrl}}/api/experiments?status=PUBLISHED&page=0&size=10",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "experiments"],
+          "query": [
+            { "key": "status", "value": "PUBLISHED" },
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "10" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('实验列表接口成功', function () { pm.response.to.have.status(200); });",
+              "const payload = pm.response.json();",
+              "pm.expect(payload.code).to.eql(0);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 查询实验详情",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/experiments/{{experimentId}}", "host": ["{{baseUrl}}"], "path": ["api", "experiments", "{{experimentId}}"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('实验详情成功', function () { pm.response.to.have.status(200); });",
+              "pm.expect(pm.response.json().code).to.eql(0);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 报名实验",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/registrations/experiments/{{experimentId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "registrations", "experiments", "{{experimentId}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('报名接口返回业务结果', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.expect(json).to.have.property('code');",
+              "if (json.code === 0 && json.data && json.data.id) { pm.collectionVariables.set('registrationId', json.data.id); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 查询我的报名",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/registrations/my", "host": ["{{baseUrl}}"], "path": ["api", "registrations", "my"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('我的报名成功', function () { pm.response.to.have.status(200); });",
+              "pm.expect(pm.response.json().code).to.eql(0);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 查询通知中心",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": {
+          "raw": "{{baseUrl}}/api/notifications/my?page=0&size=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "notifications", "my"],
+          "query": [
+            { "key": "page", "value": "0" },
+            { "key": "size", "value": "20" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('通知接口成功', function () { pm.response.to.have.status(200); });",
+              "pm.expect(pm.response.json().code).to.eql(0);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 提交申诉",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Authorization", "value": "Bearer {{token}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"appealType\": \"PAYMENT_DISPUTE\",\n  \"targetId\": {{experimentId}},\n  \"reason\": \"测试环境中用于验证小程序申诉提交链路的充分说明\",\n  \"evidenceUrls\": \"[\\\"https://example.com/evidence.png\\\"]\"\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/appeals", "host": ["{{baseUrl}}"], "path": ["api", "appeals"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('申诉提交返回业务结果', function () { pm.response.to.have.status(200); });",
+              "const json = pm.response.json();",
+              "pm.expect(json).to.have.property('code');",
+              "if (json.code === 0 && json.data && json.data.id) { pm.collectionVariables.set('appealId', json.data.id); }"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 查询我的申诉",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": { "raw": "{{baseUrl}}/api/appeals/my", "host": ["{{baseUrl}}"], "path": ["api", "appeals", "my"] }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('我的申诉成功', function () { pm.response.to.have.status(200); });",
+              "pm.expect(pm.response.json().code).to.eql(0);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
