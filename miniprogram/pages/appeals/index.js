@@ -1,41 +1,17 @@
 const { api } = require('../../utils/request');
-const { formatDateTime, formatRegistration } = require('../../utils/format');
+const { formatAppeal, formatRegistration } = require('../../utils/format');
 
 const appealTypes = [
-  { label: '信誉扣分申诉', value: 'REPUTATION_DEDUCTION' },
-  { label: '低评分申诉', value: 'LOW_RATING' },
-  { label: '支付争议申诉', value: 'PAYMENT_DISPUTE' },
+  { label: '信誉扣分', value: 'REPUTATION_DEDUCTION' },
+  { label: '低评分', value: 'LOW_RATING' },
+  { label: '支付争议', value: 'PAYMENT_DISPUTE' },
 ];
-
-const appealTypeMap = {
-  REPUTATION_DEDUCTION: '信誉扣分申诉',
-  LOW_RATING: '低评分申诉',
-  PAYMENT_DISPUTE: '支付争议申诉',
-};
-
-const appealStatusMap = {
-  PENDING: { text: '待审核', className: 'status-warning' },
-  UNDER_REVIEW: { text: '审核中', className: 'status-warning' },
-  APPROVED: { text: '已通过', className: 'status-success' },
-  REJECTED: { text: '已拒绝', className: 'status-danger' },
-};
-
-function formatAppeal(item) {
-  const statusMeta = appealStatusMap[item.status] || { text: item.status || '未知', className: 'status-muted' };
-
-  return Object.assign({}, item, {
-    createdAtText: formatDateTime(item.createdAt),
-    reviewedAtText: formatDateTime(item.reviewedAt),
-    typeText: appealTypeMap[item.appealType] || item.appealType || '未知类型',
-    statusText: statusMeta.text,
-    statusClassName: statusMeta.className,
-  });
-}
 
 function formatCompletedExperiment(registration, experiment) {
   const title = experiment ? experiment.title : `实验 #${registration.experimentId}`;
   return Object.assign({}, registration, {
     experimentTitle: title,
+    experimentLocation: experiment ? experiment.location : '',
     pickerText: `${title} · #${registration.experimentId}`,
   });
 }
@@ -55,8 +31,16 @@ Page({
     error: '',
   },
 
+  onLoad() {
+    if (this.ensureLogin()) {
+      this.loadPageData();
+    }
+  },
+
   onShow() {
-    this.loadPageData();
+    if (this.ensureLogin()) {
+      this.loadPageData();
+    }
   },
 
   onPullDownRefresh() {
@@ -104,9 +88,8 @@ Page({
   },
 
   loadAppeals() {
-    return api.getMyAppeals().then((list) => {
-      const appeals = (Array.isArray(list) ? list : []).map(formatAppeal);
-      this.setData({ appeals });
+    return api.getMyAppeals().then((appeals) => {
+      this.setData({ appeals: (Array.isArray(appeals) ? appeals : []).map(formatAppeal) });
     });
   },
 
@@ -133,6 +116,7 @@ Page({
         const completedExperiments = completed.map((item) =>
           formatCompletedExperiment(item, experimentMap[item.experimentId])
         );
+
         this.setData({
           completedExperiments,
           completedExperimentOptions: completedExperiments.map((item) => item.pickerText),
@@ -147,6 +131,7 @@ Page({
     if (!value) {
       return '';
     }
+
     return JSON.stringify(
       value
         .split(/\n|,|，/)
@@ -171,10 +156,11 @@ Page({
       return;
     }
 
+    const appealType = this.data.appealTypes[this.data.typeIndex].value;
     this.setData({ submitting: true });
     api
       .createAppeal({
-        appealType: this.data.appealTypes[this.data.typeIndex].value,
+        appealType,
         targetId: selected.experimentId,
         reason,
         evidenceUrls: this.buildEvidenceUrls(),
@@ -194,17 +180,16 @@ Page({
 
   onTapAppeal(event) {
     const appeal = event.currentTarget.dataset.appeal;
-    let content = `申诉类型：${appeal.typeText}`;
-    content += `\n提交时间：${appeal.createdAtText}`;
-    content += `\n申诉理由：${appeal.reason || '无'}`;
-    content += `\n当前状态：${appeal.statusText}`;
-
-    if (appeal.reviewComment) {
-      content += `\n审核意见：${appeal.reviewComment}`;
-    }
-    if (appeal.reviewedAtText) {
-      content += `\n审核时间：${appeal.reviewedAtText}`;
-    }
+    const content = [
+      `申诉类型：${appeal.appealTypeText}`,
+      `关联实验：#${appeal.targetId}`,
+      `提交时间：${appeal.createdAtText}`,
+      `申诉理由：${appeal.reason || '无'}`,
+      `当前状态：${appeal.statusText}`,
+      appeal.reviewComment ? `审核意见：${appeal.reviewComment}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     wx.showModal({
       title: '申诉详情',

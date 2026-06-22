@@ -1,6 +1,8 @@
-<view class="page appeal-page">
-  <view class="toolbar">
-    <view class="title">我的申诉</view>
+<view class="page appeals-page">
+  <view class="appeal-head">
+    <view class="appeal-kicker">APPEAL</view>
+    <view class="appeal-title">我的申诉</view>
+    <view class="appeal-subtitle">从已完成实验中选择争议对象，提交说明后跟踪处理状态。</view>
   </view>
 
   <view class="form-panel panel">
@@ -60,9 +62,12 @@
       data-appeal="{{item}}"
       bindtap="onTapAppeal"
     >
-      <view class="appeal-top">
-        <view class="appeal-type">{{item.typeText}}</view>
-        <view class="status {{item.statusClassName}}">{{item.statusText}}</view>
+      <view class="appeal-card-top">
+        <view>
+          <view class="appeal-type">{{item.appealTypeText}}</view>
+          <view class="appeal-target">关联实验 #{{item.targetId}}</view>
+        </view>
+        <view class="status status-{{item.statusClassName}}">{{item.statusText}}</view>
       </view>
       <view class="appeal-reason">{{item.reason || '无'}}</view>
       <view class="appeal-meta">

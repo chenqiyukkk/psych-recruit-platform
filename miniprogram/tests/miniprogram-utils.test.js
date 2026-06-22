@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const { buildUrl, unwrapResult, normalizePageData } = require('../utils/request');
 const {
   formatDateTime,
+  formatAppeal,
   formatExperiment,
   formatPayment,
   getExperimentStatusMeta,
@@ -52,6 +53,29 @@ test('format helpers produce miniapp friendly labels', () => {
   assert.deepEqual(getRegistrationStatusMeta('APPROVED'), { text: '已通过', className: 'success' });
 });
 
+test('formatAppeal maps appeal enums and dates for miniapp display', () => {
+  assert.deepEqual(
+    formatAppeal({
+      id: 7,
+      appealType: 'PAYMENT_DISPUTE',
+      targetId: 12,
+      status: 'PENDING',
+      createdAt: '2026-06-03T09:30:00',
+    }),
+    {
+      id: 7,
+      appealType: 'PAYMENT_DISPUTE',
+      targetId: 12,
+      status: 'PENDING',
+      createdAt: '2026-06-03T09:30:00',
+      appealTypeText: '支付争议',
+      statusText: '待处理',
+      statusClassName: 'warning',
+      createdAtText: '06-03 09:30',
+    }
+  );
+});
+
 test('formatExperiment turns criteria JSON into readable participant requirements', () => {
   const experiment = formatExperiment({
     status: 'PUBLISHED',
@@ -80,6 +104,46 @@ test('profile page defaults to WeChat login with a test-account fallback', () =>
   assert.match(profileWxml, /微信授权登录/);
   assert.match(profileWxml, /测试账号登录/);
   assert.match(requestSource, /wxLogin/);
+});
+
+test('mini program exposes an appeal page backed by appeal APIs', () => {
+  const appConfig = JSON.parse(fs.readFileSync(path.join(__dirname, '../app.json'), 'utf8'));
+  const profileWxml = fs.readFileSync(
+    path.join(__dirname, '../pages/profile/index.wxml'),
+    'utf8'
+  );
+  const requestSource = fs.readFileSync(path.join(__dirname, '../utils/request.js'), 'utf8');
+
+  assert.ok(appConfig.pages.includes('pages/appeals/index'));
+  assert.match(profileWxml, /我的申诉/);
+  assert.match(requestSource, /getMyAppeals/);
+  assert.match(requestSource, /createAppeal/);
+});
+
+test('home page uses a soft hero and centered filter button', () => {
+  const homeWxss = fs.readFileSync(path.join(__dirname, '../pages/home/index.wxss'), 'utf8');
+  const heroBlock = homeWxss.match(/\.hero\s*\{[\s\S]*?\n\}/)[0];
+  const searchButtonBlock = homeWxss.match(/\.search-button\s*\{[\s\S]*?\n\}/)[0];
+
+  assert.doesNotMatch(heroBlock, /#075e56|rgba\(7,\s*94,\s*86/);
+  assert.match(heroBlock, /#ffffff/);
+  assert.match(searchButtonBlock, /display:\s*flex/);
+  assert.match(searchButtonBlock, /align-items:\s*center/);
+  assert.match(searchButtonBlock, /justify-content:\s*center/);
+});
+
+test('appeal form selects from completed experiments instead of typing an id', () => {
+  const appealWxml = fs.readFileSync(
+    path.join(__dirname, '../pages/appeals/index.wxml'),
+    'utf8'
+  );
+  const appealSource = fs.readFileSync(path.join(__dirname, '../pages/appeals/index.js'), 'utf8');
+
+  assert.match(appealWxml, /选择已完成实验/);
+  assert.doesNotMatch(appealWxml, /关联记录ID/);
+  assert.match(appealSource, /getRegistrations/);
+  assert.match(appealSource, /isCompleted/);
+  assert.match(appealSource, /selected\.experimentId/);
 });
 
 test('appeal page supports creating an appeal without navigating to a missing page', () => {

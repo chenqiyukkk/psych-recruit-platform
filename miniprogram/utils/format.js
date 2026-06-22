@@ -49,6 +49,20 @@ const registrationStatusMap = {
   APPROVED: { text: '已通过', className: 'success' },
   REJECTED: { text: '未通过', className: 'danger' },
   CANCELLED: { text: '已取消', className: 'muted' },
+  COMPLETED: { text: '已完成', className: 'success' },
+};
+
+const appealTypeMap = {
+  REPUTATION_DEDUCTION: '信誉扣分',
+  LOW_RATING: '低评分',
+  PAYMENT_DISPUTE: '支付争议',
+};
+
+const appealStatusMap = {
+  PENDING: { text: '待处理', className: 'warning' },
+  UNDER_REVIEW: { text: '处理中', className: 'warning' },
+  APPROVED: { text: '已通过', className: 'success' },
+  REJECTED: { text: '已驳回', className: 'danger' },
 };
 
 function getExperimentStatusMeta(status) {
@@ -63,16 +77,20 @@ function parseJsonValue(value) {
   if (!value) {
     return null;
   }
+
   if (typeof value !== 'string') {
     return value;
   }
+
   const trimmed = value.trim();
   if (!trimmed) {
     return null;
   }
+
   if (!/^[{[]/.test(trimmed)) {
     return trimmed;
   }
+
   try {
     return JSON.parse(trimmed);
   } catch (error) {
@@ -88,6 +106,7 @@ function firstPresent(source, keys) {
   if (!isPlainObject(source)) {
     return undefined;
   }
+
   for (const key of keys) {
     if (source[key] !== undefined && source[key] !== null && source[key] !== '') {
       return source[key];
@@ -111,6 +130,7 @@ function formatAgeRange(value) {
       return `${min} 岁以上`;
     }
   }
+
   if (isPlainObject(value)) {
     const min = firstPresent(value, ['min', 'from', 'start']);
     const max = firstPresent(value, ['max', 'to', 'end']);
@@ -124,6 +144,7 @@ function formatAgeRange(value) {
       return `${max} 岁以下`;
     }
   }
+
   return value ? String(value) : '';
 }
 
@@ -144,6 +165,7 @@ function formatScreeningCriteria(value) {
   if (!parsed) {
     return { items: [], text: '' };
   }
+
   if (typeof parsed === 'string') {
     return { items: [{ label: '要求', value: parsed }], text: parsed };
   }
@@ -151,12 +173,14 @@ function formatScreeningCriteria(value) {
   const source = isPlainObject(parsed.include) ? parsed.include : parsed;
   const items = [];
   const usedKeys = new Set();
+
   const gender = firstPresent(source, ['gender', 'sex']);
   if (gender !== undefined) {
     items.push({ label: '性别', value: formatGender(gender) });
     usedKeys.add('gender');
     usedKeys.add('sex');
   }
+
   const ageRange = firstPresent(source, ['age_range', 'ageRange', 'age']);
   if (ageRange !== undefined) {
     items.push({ label: '年龄', value: formatAgeRange(ageRange) });
@@ -186,18 +210,26 @@ function formatExcludeTags(value) {
   if (!parsed) {
     return [];
   }
+
   if (Array.isArray(parsed)) {
     return parsed
-      .map((tag) => (isPlainObject(tag) ? tag.name || tag.tagName || tag.label : tag))
+      .map((tag) => {
+        if (isPlainObject(tag)) {
+          return tag.name || tag.tagName || tag.label;
+        }
+        return tag;
+      })
       .filter(Boolean)
       .map(String);
   }
+
   if (typeof parsed === 'string') {
     return parsed
       .split(/[、,，]/)
       .map((tag) => tag.trim())
       .filter(Boolean);
   }
+
   return [];
 }
 
@@ -227,10 +259,26 @@ function formatRegistration(item) {
     appliedAtText: formatDateTime(item.appliedAt),
     statusText: statusMeta.text,
     statusClassName: statusMeta.className,
+    isCompleted: item.isCompleted || item.status === 'COMPLETED',
+  });
+}
+
+function formatAppeal(item) {
+  const statusMeta = appealStatusMap[item.status] || {
+    text: item.status || '未知',
+    className: 'muted',
+  };
+
+  return Object.assign({}, item, {
+    appealTypeText: appealTypeMap[item.appealType] || item.appealType || '未知类型',
+    statusText: statusMeta.text,
+    statusClassName: statusMeta.className,
+    createdAtText: formatDateTime(item.createdAt),
   });
 }
 
 module.exports = {
+  formatAppeal,
   formatDateTime,
   formatExperiment,
   formatPayment,
