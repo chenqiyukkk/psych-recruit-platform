@@ -1,0 +1,136 @@
+@startuml 支付确认序列图
+' ==========================================
+' 心理学被试招募平台 - 序列图2：支付确认
+' 成员3：系统建模
+' ==========================================
+
+title 序列图2：报酬支付确认
+
+actor "被试" as Subject
+actor "研究者" as Researcher
+participant "小程序/Web" as Client
+participant "后端API\n(Spring Boot)" as API
+database "MySQL\n数据库" as DB
+
+== 实验完成，触发支付 ==
+
+Researcher -> Client: 点击"标记实验完成"
+activate Client
+Client -> API: POST /api/signin/complete\n{experimentId}
+activate API
+API -> DB: UPDATE registrations\nSET is_completed=1\nWHERE experiment_id=#{id}
+API -> DB: INSERT INTO payment_records\n(registration_id, payer_user_id, payee_user_id,\n amount, status=PENDING)
+activate DB
+DB --> API: 支付记录创建成功
+deactivate DB
+API --> Client: {"code": 200, "data": {"paymentId": xxx}}
+deactivate API
+Client --> Researcher: 显示"实验完成\n已创建支付记录"
+deactivate Client
+
+== 被试上传收款码 ==
+
+API -> Subject: 推送通知"请上传收款码"
+
+Subject -> Client: 进入收款码上传页面
+activate Client
+Subject -> Client: 选择"微信支付"\n上传收款码图片
+Client -> API: POST /api/payment/codes\n{paymentType, qrCodeImage}
+activate API
+API -> DB: INSERT INTO payment_codes\n(user_id, payment_type, qr_code_url)
+activate DB
+DB --> API: 收款码保存成功
+deactivate DB
+API --> Client: {"code": 200, "message": "收款码上传成功"}
+deactivate API
+Client --> Subject: 显示"上传成功"
+deactivate Client
+
+== 研究者查看并支付 ==
+
+API -> Researcher: 推送通知"被试已上传收款码"
+
+Researcher -> Client: 查看支付记录列表
+activate Client
+Client -> API: GET /api/payment/records\n?status=PENDING
+activate API
+API -> DB: SELECT * FROM payment_records\nLEFT JOIN payment_codes
+activate DB
+DB --> API: 返回支付记录+收款码
+deactivate DB
+API --> Client: 返回列表
+deactivate API
+Client --> Researcher: 显示被试收款码
+deactivate Client
+
+note over Researcher: **线下扫码支付**\n使用微信/支付宝扫码转账
+
+== 研究者确认支付 ==
+
+Researcher -> Client: 上传支付截图\n点击"标记已支付"
+activate Client
+Client -> API: POST /api/payment/records/confirm-payer\n{paymentId, screenshot}
+activate API
+API -> DB: UPDATE payment_records\nSET status=PAID,\npayer_confirmed_at=NOW(),\npayment_screenshot_url=screenshot
+activate DB
+DB --> API: 更新成功
+deactivate DB
+API -> DB: INSERT INTO notifications\n(user_id=被试, type=PAYMENT_RECEIVED)
+DB --> API: 通知创建成功
+
+API --> Client: {"code": 200, "message": "已标记支付"}
+deactivate API
+Client --> Researcher: 显示"已标记支付"
+deactivate Client
+
+== 被试确认收款 ==
+
+API -> Subject: 推送通知"研究者已支付"
+
+Subject -> Client: 查看支付记录
+activate Client
+Client -> API: GET /api/payment/records/{registrationId}
+activate API
+API -> DB: SELECT * FROM payment_records
+DB --> API: 返回支付记录（含截图）
+API --> Client: 返回支付详情
+deactivate API
+Client --> Subject: 显示支付截图\n"请确认是否收到款项"
+deactivate Client
+
+alt 确认收到款项
+    Subject -> Client: 点击"确认收款"
+    activate Client
+    Client -> API: POST /api/payment/records/confirm-payee\n{paymentId}
+    activate API
+    API -> DB: UPDATE payment_records\nSET status=CONFIRMED,\npayee_confirmed_at=NOW()
+    activate DB
+    DB --> API: 更新成功
+    deactivate DB
+    API -> API: **触发双向评价流程**\n创建评价提醒通知
+    API -> DB: INSERT INTO notifications\n(type=REVIEW_REQUIRED)\n发送给双方
+    API --> Client: {"code": 200, "data": {"status": "CONFIRMED"}}
+    deactivate API
+    Client --> Subject: 显示"收款确认成功\n请评价本次实验"
+    deactivate Client
+
+else 未收到/有异议
+    Subject -> Client: 点击"发起争议"
+    activate Client
+    Subject -> Client: 填写争议理由\n上传证据截图
+    Client -> API: POST /api/payment/records/dispute\n{paymentId, reason, evidenceUrls}
+    activate API
+    API -> DB: UPDATE payment_records\nSET status=DISPUTED
+    activate DB
+    DB --> API: 更新成功
+    deactivate DB
+    API -> DB: INSERT INTO appeals\n(appellant_id, appeal_type=PAYMENT_DISPUTE,\ntarget_id, reason, evidence_urls, status=PENDING)
+    DB --> API: 申诉记录创建
+    API -> DB: INSERT INTO notifications\n(user_id=管理员, type=NEW_APPEAL)
+    API --> Client: {"code": 200, "message": "争议已提交"}
+    deactivate API
+    Client --> Subject: 显示"争议已提交\n等待管理员处理"
+    deactivate Client
+end
+
+@enduml

@@ -1,0 +1,153 @@
+@startuml 双向评价序列图
+' ==========================================
+' 心理学被试招募平台 - 序列图3：双向评价
+' 成员3：系统建模
+' ==========================================
+
+title 序列图3：双向评价流程
+
+actor "被试\n(Subject)" as Subject
+actor "研究者\n(Researcher)" as Researcher
+participant "小程序/Web" as Client
+participant "后端API\n(Spring Boot)" as API
+database "MySQL\n数据库" as DB
+
+== 支付确认完成，触发评价 ==
+
+API -> API: 支付状态变为 CONFIRMED\n触发双向评价流程
+
+API -> DB: INSERT INTO notifications\n(被试, REVIEW_REQUIRED)
+activate DB
+DB --> API: 通知创建成功
+deactivate DB
+
+API -> DB: INSERT INTO notifications\n(研究者, REVIEW_REQUIRED)
+activate DB
+DB --> API: 通知创建成功
+deactivate DB
+
+API -> Subject: 推送"请评价研究者"
+API -> Researcher: 推送"请评价被试"
+
+== 并行：双方评价 ==
+
+par
+  group 被试评价研究者
+    Subject -> Client: 进入评价页面
+    activate Client
+
+    Client -> API: GET /api/reviews/experiment/{id}
+    activate API
+    API -> DB: 查询实验信息
+    activate DB
+    DB --> API: 返回实验信息
+    deactivate DB
+    API --> Client: 返回实验信息
+    deactivate API
+
+    Client --> Subject: 显示评价表单\n(总评分+沟通+专业+准时+文字+匿名)
+
+    Subject -> Client: 填写评价\n总评5星, 沟通4, 专业5, 准时5\n勾选"匿名评价"
+
+    Client -> API: POST /api/reviews\n(SUBJECT_TO_RESEARCHER, rating=5, isAnonymous=true)
+    activate API
+
+    API -> DB: 检查是否重复评价
+    activate DB
+    DB --> API: 无重复
+    deactivate DB
+
+    API -> DB: INSERT INTO reviews
+    activate DB
+    DB --> API: 评价创建成功
+    deactivate DB
+
+    API -> DB: SELECT AVG(rating)\n更新研究者平均评分
+    activate DB
+    DB --> API: 返回平均评分
+    deactivate DB
+
+    API -> DB: UPDATE users\nSET researcher_rating = avg
+    activate DB
+    DB --> API: 更新成功
+    deactivate DB
+
+    API -> DB: INSERT INTO notifications\n(研究者, REVIEW_RECEIVED)
+    activate DB
+    DB --> API: 通知创建成功
+    deactivate DB
+
+    API --> Client: 评价提交成功
+    deactivate API
+
+    Client --> Subject: 显示"评价提交成功"
+    deactivate Client
+
+    API -> Researcher: 推送"收到新评价"\n(匿名：仅显示评分)
+  end
+
+  group 研究者评价被试
+    Researcher -> Client: 进入评价页面
+    activate Client
+
+    Client -> API: GET /api/registrations/experiment/{id}
+    activate API
+    API -> DB: 查询被试列表(匿名ID)
+    activate DB
+    DB --> API: 返回被试列表
+    deactivate DB
+    API --> Client: 返回被试列表
+    deactivate API
+
+    Client --> Researcher: 显示评价表单\n(总评分+沟通+配合度+准时+文字)
+
+    Researcher -> Client: 填写评价\n总评4星, 沟通4, 配合4, 准时5
+
+    Client -> API: POST /api/reviews\n(RESEARCHER_TO_SUBJECT, rating=4, isAnonymous=false)
+    activate API
+
+    API -> DB: 检查是否重复评价
+    activate DB
+    DB --> API: 无重复
+    deactivate DB
+
+    API -> DB: INSERT INTO reviews
+    activate DB
+    DB --> API: 评价创建成功
+    deactivate DB
+
+    API -> DB: INSERT INTO reputation_logs\n(change_type=ON_TIME, score_delta=+2)
+    activate DB
+    DB --> API: 信誉记录创建
+    deactivate DB
+
+    API -> DB: UPDATE users\nSET reputation_score += 2
+    activate DB
+    DB --> API: 信誉分更新成功
+    deactivate DB
+
+    API -> DB: INSERT INTO notifications\n(被试, REVIEW_RECEIVED)
+    activate DB
+    DB --> API: 通知创建成功
+    deactivate DB
+
+    API --> Client: 评价提交成功
+    deactivate API
+
+    Client --> Researcher: 显示"评价提交成功"
+    deactivate Client
+
+    API -> Subject: 推送"收到新评价\n信誉分+2"
+  end
+end
+
+== 双方评价完成 ==
+
+note over API
+  **双向评价完成**
+  双方均可看到对方评分
+  匿名评价显示为"匿名用户"
+  评价作为信誉分和研究者评级的依据
+end note
+
+@enduml

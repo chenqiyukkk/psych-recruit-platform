@@ -1,0 +1,86 @@
+@startuml 支付记录状态流转图
+' ==========================================
+' 心理学被试招募平台 - 状态图2：支付记录状态流转
+' 成员3：系统建模
+' ==========================================
+
+title 状态图2：支付记录状态流转
+
+skinparam state {
+  BackgroundColor #F8F8F8
+  BorderColor #444444
+  FontColor #333333
+}
+
+' === 状态定义 ===
+
+[*] --> PENDING : 实验完成\n系统自动创建支付记录
+
+state PENDING #LightYellow {
+  [*] --> 等待被试上传收款码
+  等待被试上传收款码 --> 等待研究者支付 : 收款码已上传
+}
+
+state "PENDING\n待支付" as PENDING
+state "PAID\n已支付" as PAID #LightBlue
+state "CONFIRMED\n已确认" as CONFIRMED #LightGreen
+state "DISPUTED\n争议中" as DISPUTED #LightPink
+
+' === 状态转换 ===
+
+PENDING --> PAID : **研究者标记已支付**\n↓\n· 研究者上传支付截图\n· 记录 payer_confirmed_at\n· 通知被试确认收款\n· 触发事件：PAYER_CONFIRMED
+
+PAID --> CONFIRMED : **被试确认收款**\n↓\n· 被试点击"确认收款"\n· 记录 payee_confirmed_at\n· **触发双向评价流程**\n· 触发事件：PAYEE_CONFIRMED
+
+PAID --> CONFIRMED : **超时自动确认**\n↓\n· 超过7天未确认\n· 系统定时任务触发\n· 自动更新状态\n· **触发双向评价流程**\n· 触发事件：TIMEOUT_AUTO_CONFIRM
+
+PAID --> DISPUTED : **被试发起争议**\n↓\n· 填写争议理由\n· 上传证据截图\n· 创建申诉记录\n· 通知管理员处理\n· 触发事件：DISPUTE_FILED
+
+DISPUTED --> CONFIRMED : **管理员审核通过**\n↓\n· 维持支付有效\n· 争议不成立\n· 申诉状态→REJECTED\n· 发送审核结果通知\n· 触发事件：APPEAL_APPROVED_PAYER
+
+DISPUTED --> PENDING : **管理员审核拒绝**\n↓\n· 撤销支付确认\n· 争议成立\n· 申诉状态→APPROVED\n· 重新进入支付流程\n· 触发事件：APPEAL_APPROVED_APPELLANT
+
+' === 特殊说明 ===
+
+note top of PENDING
+  **待支付状态**
+  · 实验完成后自动进入
+  · 研究者需查看被试收款码
+  · 线下扫码转账
+end note
+
+note right of PAID
+  **已支付状态**
+  · 研究者已上传支付截图
+  · 等待被试确认
+  · 7天倒计时启动
+  · 此为关键等待节点
+end note
+
+note top of CONFIRMED
+  **已确认（终态）**
+  · 不可再变更
+  · 触发评价流程
+  · 支付流程结束
+end note
+
+note right of DISPUTED
+  **争议中状态**
+  · 管理员介入审核
+  · 审核后可回到CONFIRMED
+  · 或回到PENDING重新支付
+end note
+
+' === 状态转换条件汇总 ===
+
+legend bottom right
+  | 转换 | 触发事件 | 执行者 |
+  | PENDING → PAID | 上传支付截图+标记 | 研究者 |
+  | PAID → CONFIRMED | 确认收款 | 被试 |
+  | PAID → CONFIRMED | 超时7天自动 | 系统定时任务 |
+  | PAID → DISPUTED | 发起争议 | 被试 |
+  | DISPUTED → CONFIRMED | 审核通过 | 管理员 |
+  | DISPUTED → PENDING | 审核拒绝 | 管理员 |
+endlegend
+
+@enduml

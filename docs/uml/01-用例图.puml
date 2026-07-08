@@ -1,0 +1,114 @@
+@startuml 用例图
+' ==========================================
+' 心理学被试招募平台 - 用例图
+' 成员3：系统建模
+' ==========================================
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+' === 角色定义 ===
+actor "被试\n(Subject)" as Subject <<蓝色>> #Blue
+actor "研究者\n(Researcher)" as Researcher <<绿色>> #Green
+actor "管理员\n(Admin)" as Admin <<黄色>> #Yellow
+
+' === 系统边界 ===
+package "心试通 · 心理学被试招募平台" as System #White {
+
+  ' ===== 被试用例 =====
+  rectangle "被试用例" as SubjectUC #LightBlue {
+    usecase "浏览实验列表" as UC_Browse
+    usecase "查看实验详情\n（含伦理信息）" as UC_ViewDetail
+    usecase "资格自检\n（预校验）" as UC_SelfCheck
+    usecase "报名实验\n（提交报名）" as UC_Register
+    usecase "签署知情同意书" as UC_SignConsent
+    usecase "上传收款码" as UC_UploadQR
+    usecase "确认收款" as UC_ConfirmPay
+    usecase "扫码签到" as UC_ScanSignIn
+    usecase "评价研究者" as UC_ReviewR
+    usecase "发起申诉" as UC_Appeal
+    usecase "查看我的报名\n与评价" as UC_MyReg
+  }
+
+  ' ===== 研究者用例 =====
+  rectangle "研究者用例" as ResearcherUC #LightGreen {
+    usecase "发布实验\n（含伦理信息）" as UC_Publish
+    usecase "配置筛选条件\n（年龄/性别/专业等）" as UC_Screening
+    usecase "配置互斥规则\n（标签+冷却天数）" as UC_Exclusive
+    usecase "审核报名申请" as UC_ReviewReg
+    usecase "查看签到情况" as UC_ViewSignIn
+    usecase "标记已支付\n（上传截图）" as UC_MarkPaid
+    usecase "标记实验完成" as UC_Complete
+    usecase "评价被试" as UC_ReviewS
+    usecase "导出被试名单\n（脱敏数据）" as UC_Export
+  }
+
+  ' ===== 管理员用例 =====
+  rectangle "管理员用例" as AdminUC #LightYellow {
+    usecase "伦理审查\n（审核实验）" as UC_Ethics
+    usecase "管理用户账号\n（禁用/删除）" as UC_UserMgmt
+    usecase "处理争议申诉" as UC_HandleAppeal
+    usecase "系统配置维护\n（字典/参数）" as UC_SysConfig
+    usecase "查看数据统计" as UC_Stats
+    usecase "信誉分管理\n（手动增减）" as UC_RepMgmt
+  }
+
+  ' ===== 用例关系 =====
+  UC_Register ..> UC_SignConsent : <<include>>
+  UC_Publish ..> UC_Screening : <<include>>
+  UC_Publish ..> UC_Exclusive : <<include>>
+  UC_ReviewR ..> UC_Appeal : <<extend>>
+  UC_ReviewS ..> UC_Appeal : <<extend>>
+}
+
+' === 角色 → 用例关联 ===
+Subject --> UC_Browse
+Subject --> UC_ViewDetail
+Subject --> UC_SelfCheck
+Subject --> UC_Register
+Subject --> UC_UploadQR
+Subject --> UC_ConfirmPay
+Subject --> UC_ScanSignIn
+Subject --> UC_ReviewR
+Subject --> UC_Appeal
+Subject --> UC_MyReg
+
+Researcher --> UC_Publish
+Researcher --> UC_ReviewReg
+Researcher --> UC_ViewSignIn
+Researcher --> UC_MarkPaid
+Researcher --> UC_Complete
+Researcher --> UC_ReviewS
+Researcher --> UC_Export
+
+Admin --> UC_Ethics
+Admin --> UC_UserMgmt
+Admin --> UC_HandleAppeal
+Admin --> UC_SysConfig
+Admin --> UC_Stats
+Admin --> UC_RepMgmt
+
+' === 注释 ===
+note right of UC_SignConsent
+  **伦理合规关键节点**
+  记录：签署时间 + IP地址 + 设备指纹
+  不可篡改，完整审计日志
+end note
+
+note right of UC_Screening
+  **资格校验4项规则**
+  ① 年龄范围
+  ② 性别要求
+  ③ 信誉分 ≥ 60
+  ④ 互斥标签 + 冷却期
+end note
+
+note bottom of UC_Appeal
+  **申诉类型**
+  · 信誉分扣分申诉
+  · 低评分申诉
+  · 支付争议申诉
+end note
+
+@enduml

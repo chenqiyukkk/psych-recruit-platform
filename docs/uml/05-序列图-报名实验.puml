@@ -1,0 +1,140 @@
+@startuml 报名实验序列图
+' ==========================================
+' 心理学被试招募平台 - 序列图1：被试报名实验
+' 成员3：系统建模
+' ==========================================
+
+title 序列图1：被试报名实验
+
+actor "被试" as Subject
+participant "微信小程序" as MiniApp
+participant "后端API\n(Spring Boot)" as API
+database "MySQL\n数据库" as DB
+participant "研究者" as Researcher
+
+== 报名请求阶段 ==
+
+Subject -> MiniApp: 点击"立即报名"按钮
+activate MiniApp
+
+MiniApp -> API: POST /api/registrations\n{experimentId}
+activate API
+
+API -> DB: 查询被试档案\nSELECT * FROM participant_profiles\nWHERE user_id = #{userId}
+activate DB
+DB --> API: 返回被试档案\n(年龄段/性别/专业等)
+deactivate DB
+
+API -> DB: 查询实验筛选条件\nSELECT * FROM experiments\nWHERE id = #{experimentId}
+activate DB
+DB --> API: 返回实验详情\n(筛选条件/互斥标签/状态)
+deactivate DB
+
+== 资格校验阶段 ==
+
+API -> API: **资格校验1：年龄**\n比对档案年龄段 vs 筛选条件年龄范围
+alt 年龄不符合
+    API --> MiniApp: {"code": 400, "message": "您的年龄不符合本次实验要求"}
+    MiniApp --> Subject: 提示"年龄不符合要求"
+else 年龄符合
+    API -> API: ✅ 年龄校验通过
+end
+
+API -> API: **资格校验2：性别**\n比对档案性别 vs 筛选条件性别要求
+alt 性别不符合
+    API --> MiniApp: {"code": 400, "message": "您的性别不符合本次实验要求"}
+    MiniApp --> Subject: 提示"性别不符合要求"
+else 性别符合
+    API -> API: ✅ 性别校验通过
+end
+
+API -> DB: 查询被试信誉分\nSELECT reputation_score FROM users\nWHERE id = #{userId}
+activate DB
+DB --> API: 返回信誉分
+deactivate DB
+
+API -> API: **资格校验3：信誉分**\n判断信誉分 ≥ 60
+alt 信誉分 < 60
+    API --> MiniApp: {"code": 400, "message": "您的信誉分不足，无法报名"}
+    MiniApp --> Subject: 提示"信誉分不足"
+else 信誉分 ≥ 60
+    API -> API: ✅ 信誉分校验通过
+end
+
+API -> DB: 查询30天内参与实验记录\nSELECT * FROM registrations r\nJOIN experiment_tags et\n比对互斥标签
+activate DB
+DB --> API: 返回同类实验参与记录
+deactivate DB
+
+API -> API: **资格校验4：互斥规则**\n判断是否参与过同类标签实验
+alt 存在互斥冲突
+    API --> MiniApp: {"code": 400, "message": "近期已参加过同类实验，请30天后重试"}
+    MiniApp --> Subject: 提示"近期已参加过同类实验"
+else 无冲突
+    API -> API: ✅ 互斥规则校验通过
+end
+
+== 全项通过 → 创建报名 ==
+
+API -> API: ✅ 全部4项校验通过
+API -> DB: INSERT INTO registrations\n(experiment_id, user_id, status=PENDING)
+activate DB
+DB --> API: 返回报名记录ID
+deactivate DB
+
+API -> DB: INSERT INTO consent_records\n(registration_id, consent_version, signed_at,\nip_address, device_fingerprint)
+activate DB
+DB --> API: 返回同意书记录ID
+deactivate DB
+
+API -> DB: INSERT INTO notifications\n(user_id=研究者, type=NEW_REGISTRATION)
+activate DB
+DB --> API: 通知创建成功
+deactivate DB
+
+API -> DB: COMMIT
+activate DB
+DB --> API: 事务提交成功
+deactivate DB
+
+API --> MiniApp: {"code": 200, "message": "报名成功，等待审核",\n"data": {"registrationId": xxx}}
+deactivate API
+
+MiniApp --> Subject: 显示"报名成功\n等待研究者审核"
+deactivate MiniApp
+
+== 审核阶段 ==
+
+API -> Researcher: 推送审核通知
+
+Researcher -> API: GET /api/registrations/experiment/{id}
+activate API
+API -> DB: 查询报名列表\n（被试脱敏信息）
+DB --> API: 返回列表
+API --> Researcher: 显示报名列表\n（匿名ID/年龄段/匹配结果）
+deactivate API
+
+alt 审核通过
+    Researcher -> API: POST /api/registrations/{id}/approve
+    activate API
+    API -> DB: UPDATE registrations\nSET status=APPROVED, reviewed_at=NOW()
+    DB --> API: 更新成功
+    API -> DB: INSERT INTO notifications\n(type=REGISTRATION_APPROVED)
+    API --> Researcher: {"code": 200, "message": "审核通过"}
+    deactivate API
+    API -> MiniApp: 推送"审核通过"通知
+    MiniApp --> Subject: 显示"审核通过"
+
+else 审核拒绝
+    Researcher -> API: POST /api/registrations/{id}/reject\n{reason: "不符合条件"}
+    activate API
+    API -> DB: UPDATE registrations\nSET status=REJECTED, reviewed_at=NOW()
+    DB --> API: 更新成功
+    API -> DB: INSERT INTO notifications\n(type=REGISTRATION_REJECTED)
+    API --> Researcher: {"code": 200, "message": "已拒绝"}
+    deactivate API
+    API -> MiniApp: 推送"审核拒绝"通知
+    MiniApp --> Subject: 显示"审核拒绝\n原因：不符合条件"
+end
+
+@enduml

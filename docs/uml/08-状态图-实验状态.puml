@@ -1,0 +1,100 @@
+@startuml 实验状态流转图
+' ==========================================
+' 心理学被试招募平台 - 状态图1：实验状态流转
+' 成员3：系统建模
+' ==========================================
+
+title 状态图1：实验项目状态流转
+
+skinparam state {
+  BackgroundColor #F0F0F0
+  BorderColor #333333
+  FontColor #333333
+  ArrowColor #555555
+}
+
+' === 初始状态 ===
+[*] --> DRAFT : 研究者创建实验
+
+state DRAFT #LightGray {
+  [*] --> 编辑中
+  编辑中 --> 草稿保存 : 保存草稿
+}
+
+state "DRAFT\n草稿" as DRAFT
+state "PUBLISHED\n已发布" as PUBLISHED #LightBlue
+state "RECRUITING\n招募中" as RECRUITING #LightGreen
+state "FULL\n已满员" as FULL #Orange
+state "ONGOING\n进行中" as ONGOING #LightYellow
+state "COMPLETED\n已结束" as COMPLETED #LightGreen
+state "CANCELLED\n已取消" as CANCELLED #LightPink
+
+' === 状态转换 ===
+
+DRAFT --> PUBLISHED : **研究者发布**\n↓\n验证：伦理审批编号必填\n验证：筛选条件已配置\n验证：起止时间有效
+
+PUBLISHED --> RECRUITING : **到达招募开始时间**\n↓\n系统定时自动更新\n实验在列表可见
+
+PUBLISHED --> CANCELLED : **研究者取消**\n↓\n不再对外展示\n已报名被试收到取消通知
+
+RECRUITING --> FULL : **报名人数达上限**\n↓\nmaxParticipants 已满\n不再接受新报名\n状态标签显示"已满员"
+
+RECRUITING --> ONGOING : **到达实验开始时间**\n↓\n系统自动更新\n未审核报名自动拒绝
+
+FULL --> ONGOING : **到达实验开始时间**\n↓\n系统自动更新
+
+ONGOING --> COMPLETED : **研究者标记完成**\n↓\n所有被试已签到\n研究者点击"标记实验完成"\n触发支付记录创建
+
+RECRUITING --> CANCELLED : **研究者取消**\n↓\n需填写取消原因\n已通过被试收到取消通知\n报名人数归零
+
+ONGOING --> CANCELLED : **研究者取消**\n↓\n已签到被试按未完成处理\n特殊情况需管理员确认
+
+' === 特殊说明 ===
+
+note right of DRAFT
+  **草稿状态说明**
+  · 可反复编辑
+  · 不可被被试看到
+  · 必须填写伦理审批信息
+end note
+
+note top of PUBLISHED
+  **已发布状态说明**
+  · 已通过伦理审查
+  · 等待到达招募时间
+  · 被试可预览但不可报名
+end note
+
+note right of RECRUITING
+  **招募中状态说明**
+  · 核心业务状态
+  · 被试可以报名
+  · 研究者可以审核
+  · 资格校验生效
+end note
+
+note bottom of ONGOING
+  **进行中状态说明**
+  · 实验已开始
+  · 被试可扫码签到
+  · 签到完成后等待结束
+  · 不可再报名/取消
+end note
+
+note right of COMPLETED
+  **完成状态说明**
+  · 触发支付流程
+  · 触发评价流程
+  · 信誉分自动更新
+  · 数据归档
+end note
+
+note left of CANCELLED
+  **取消状态**
+  · 任意非终态可取消
+  · 已报名被试收到通知
+  · 实验不再显示
+  · 不可恢复
+end note
+
+@enduml

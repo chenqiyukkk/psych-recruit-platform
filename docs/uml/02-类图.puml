@@ -1,0 +1,221 @@
+@startuml 核心领域类图
+' ==========================================
+' 心理学被试招募平台 - 核心领域类图
+' 成员3：系统建模
+' ==========================================
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam classFontName Microsoft YaHei
+skinparam defaultFontName Microsoft YaHei
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam backgroundColor #FAFAFA
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #2C3E50
+  BorderThickness 1.5
+  FontColor #2C3E50
+  HeaderBackgroundColor #2C3E50
+  HeaderFontColor #FFFFFF
+}
+
+skinparam package {
+  BackgroundColor #F8F9FA
+  BorderColor #DEE2E6
+  BorderThickness 1
+  FontSize 14
+  FontStyle bold
+}
+
+skinparam arrow {
+  Color #6C757D
+  Thickness 1.2
+}
+
+top to bottom direction
+
+' ==========================================
+' 用户与身份模块
+' ==========================================
+package "用户与身份" #E3F2FD {
+
+  class User <<核心实体>> {
+    + id
+    + username
+    + password (BCrypt)
+    + phone
+    + email
+    + role: SUBJECT | RESEARCHER | ADMIN
+    + reputationScore = 100
+    + researcherRating
+    --
+    + login()
+    + updateProfile()
+  }
+
+  class ParticipantProfile <<匿名档案>> {
+    + anonymousId (P-2025-001)
+    + ageGroup
+    + gender
+    + majorCategory
+    + handedness
+    --
+    + getDesensitizedInfo()
+  }
+
+  class PaymentCode <<收款码>> {
+    + paymentType: WECHAT | ALIPAY
+    + qrCodeUrl
+    + isDefault
+  }
+
+  User "1" --o "1" ParticipantProfile : 匿名映射
+  User "1" --o "0..*" PaymentCode : 收款方式
+}
+
+' ==========================================
+' 实验核心模块
+' ==========================================
+package "实验核心" #E8F5E9 {
+
+  class Experiment <<核心实体>> {
+    + title
+    + description
+    + location
+    + startTime / endTime
+    + ethicsApprovalNo
+    + riskLevel: LOW | MEDIUM | HIGH
+    + paymentAmount
+    + paymentMethod = OFFLINE
+    + screeningCriteria (JSON)
+    + excludeTags (JSON)
+    + status: DRAFT → ... → COMPLETED
+    --
+    + publish()
+    + cancel()
+    + matchScreening()
+    + checkExclusiveTag()
+  }
+
+  class ExperimentTag <<互斥标签>> {
+    + tagName
+    + coolingDays = 30
+    --
+    + isCooled()
+  }
+
+  Experiment "1" --o "0..*" ExperimentTag : 互斥规则
+}
+
+' ==========================================
+' 报名与知情同意
+' ==========================================
+package "报名与签署" #FFF3E0 {
+
+  class Registration <<核心实体>> {
+    + status: PENDING | APPROVED | REJECTED | CANCELLED
+    + appliedAt
+    + reviewedAt
+    + signInTime
+    + isCompleted
+    --
+    + apply()
+    + approve() / reject()
+    + signIn()
+    + complete()
+  }
+
+  class ConsentRecord <<伦理合规>> {
+    + consentVersion
+    + signedAt
+    + ipAddress
+    + deviceFingerprint
+    + isVerified
+    --
+    + sign()
+    + verify()
+  }
+
+  Registration "1" --o "1" ConsentRecord : 强制签署
+}
+
+' ==========================================
+' 支付与评价
+' ==========================================
+package "支付与评价" #FCE4EC {
+
+  class PaymentRecord <<核心实体>> {
+    + amount
+    + paymentScreenshotUrl
+    + status: PENDING | PAID | CONFIRMED | DISPUTED
+    + payerConfirmedAt
+    + payeeConfirmedAt
+    --
+    + confirmByPayer()
+    + confirmByPayee()
+    + dispute()
+    + autoConfirm()
+  }
+
+  class Review <<双向评价>> {
+    + reviewType: SUB_TO_RESEARCHER | RESEARCHER_TO_SUB
+    + rating (1-5)
+    + communicationScore
+    + professionalismScore
+    + punctualityScore
+    + comment
+    + isAnonymous
+    --
+    + submit()
+    + calculateAverage()
+  }
+
+  Registration "1" --o "1" PaymentRecord : 触发支付
+  Registration "1" --o "0..2" Review : 双向评价
+}
+
+' ==========================================
+' 跨包关系
+' ==========================================
+
+User "1" --o "0..*" Experiment : 研究者发布 >
+User "1" --o "0..*" Registration : 被试报名 >
+Experiment "1" --o "0..*" Registration : 被报名
+
+' 评价关联用户
+User "1" --o "0..*" Review : 评价他人 >
+User "1" --o "0..*" Review : 被评价 <
+
+' ==========================================
+' 关键设计注释
+' ==========================================
+
+note right of ParticipantProfile
+  <b>被试匿名化</b>
+  真实身份 → 匿名ID映射
+  研究者端仅可见脱敏信息
+end note
+
+note right of ConsentRecord
+  <b>伦理合规强制</b>
+  记录 IP + 设备指纹
+  不可篡改，完整审计
+end note
+
+note left of PaymentRecord
+  <b>线下支付模式</b>
+  平台不经手资金
+  双方确认制
+  超时7天自动确认
+end note
+
+note left of Review
+  <b>双向评价</b>
+  被试 ⇄ 研究者互评
+  支持匿名评价
+  评分影响信誉分/研究者评级
+end note
+
+@enduml
