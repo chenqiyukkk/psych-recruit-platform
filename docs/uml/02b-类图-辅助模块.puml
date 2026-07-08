@@ -1,0 +1,171 @@
+@startuml 辅助模块类图
+' ==========================================
+' 心理学被试招募平台 - 辅助模块类图
+' 成员3：系统建模
+' ==========================================
+
+skinparam classAttributeIconSize 0
+skinparam classFontSize 13
+skinparam classFontName Microsoft YaHei
+skinparam defaultFontName Microsoft YaHei
+skinparam shadowing false
+skinparam roundCorner 10
+skinparam backgroundColor #FAFAFA
+
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #2C3E50
+  BorderThickness 1.5
+  FontColor #2C3E50
+  HeaderBackgroundColor #2C3E50
+  HeaderFontColor #FFFFFF
+}
+
+skinparam package {
+  BackgroundColor #F8F9FA
+  BorderColor #DEE2E6
+  BorderThickness 1
+  FontSize 14
+  FontStyle bold
+}
+
+skinparam arrow {
+  Color #6C757D
+  Thickness 1.2
+}
+
+top to bottom direction
+
+' ==========================================
+' 申诉模块
+' ==========================================
+package "申诉处理" #FFEBEE {
+
+  class Appeal <<申诉记录>> {
+    + appealType: REPUTATION | LOW_RATING | PAYMENT
+    + targetId
+    + reason
+    + evidenceUrls (JSON)
+    + status: PENDING | UNDER_REVIEW | APPROVED | REJECTED
+    + reviewerId
+    + reviewComment
+    + reviewedAt
+    --
+    + submit()
+    + review()
+    + revokeOriginalAction()
+  }
+}
+
+' ==========================================
+' 信誉分模块
+' ==========================================
+package "信誉分" #FFF8E1 {
+
+  class ReputationLog <<信誉变动>> {
+    + changeType: INITIAL | ON_TIME | NO_SHOW | ...
+    + scoreDelta (±整数)
+    + reason
+    + createdAt
+    --
+    + recordChange()
+  }
+}
+
+' ==========================================
+' 通知模块
+' ==========================================
+package "消息通知" #E8EAF6 {
+
+  class Notification <<系统通知>> {
+    + title
+    + content
+    + type: REGISTRATION | PAYMENT | REVIEW | APPEAL
+    + relatedType
+    + relatedId
+    + isRead
+    + readAt
+    --
+    + markAsRead()
+    + send()
+  }
+}
+
+' ==========================================
+' 系统配置
+' ==========================================
+package "系统配置" #ECEFF1 {
+
+  class SysConfig <<字典配置>> {
+    + configKey (唯一)
+    + configValue
+    + description
+    --
+    + get()
+    + set()
+  }
+}
+
+' ==========================================
+' 关联到核心模块的 User（引用）
+' ==========================================
+package "核心引用" #F5F5F5 {
+  class User <<来自核心类图>> {
+    + id
+    + reputationScore
+    + researcherRating
+  }
+
+  class Review <<来自核心类图>> {
+    + id
+    + rating
+  }
+
+  class PaymentRecord <<来自核心类图>> {
+    + id
+    + status
+  }
+}
+
+' ==========================================
+' 关系
+' ==========================================
+
+User "1" --o "0..*" Appeal : 发起申诉
+User "1" --o "0..*" Appeal : 审核申诉 <
+
+User "1" --o "0..*" ReputationLog : 信誉记录 >
+User "1" --o "0..*" Notification : 接收通知 >
+
+' 多态申诉目标（Appeal 可指向三种实体）
+Review "1" --o "0..*" Appeal : 低评分申诉
+PaymentRecord "1" --o "0..*" Appeal : 支付争议
+ReputationLog "1" --o "0..*" Appeal : 扣分申诉
+
+' ==========================================
+' 注释
+' ==========================================
+
+note top of Appeal
+  <b>申诉多态关联</b>
+  targetId 可指向 Review、
+  PaymentRecord 或 ReputationLog
+  管理员审核后决定是否撤销原操作
+end note
+
+note left of ReputationLog
+  <b>信誉分规则</b>
+  初始 +100 | 按时 +2
+  爽约 -20 | 中途退出 -10
+  虚假信息 -50 + 冻结
+  申诉恢复 +N
+end note
+
+note right of Notification
+  <b>通知类型</b>
+  报名审核 | 支付确认
+  实验提醒 | 评价收到
+  申诉处理完成
+end note
+
+@enduml
