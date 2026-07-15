@@ -32,6 +32,18 @@ export function publishExperiment(id) {
   return http.post(`/experiments/${id}/publish`);
 }
 
+export function submitForReview(id) {
+  return http.post(`/experiments/${id}/submit-review`);
+}
+
+export function approveExperiment(id) {
+  return http.post(`/experiments/${id}/approve`);
+}
+
+export function rejectExperiment(id, reason) {
+  return http.post(`/experiments/${id}/reject`, { reason });
+}
+
 export function cancelExperiment(id) {
   return http.post(`/experiments/${id}/cancel`);
 }

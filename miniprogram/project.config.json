@@ -26,8 +26,8 @@
     }
   },
   "compileType": "miniprogram",
-  "libVersion": "3.7.0",
-  "appid": "wx999817108e06aaf2",
+  "libVersion": "3.16.2",
+  "appid": "touristappid",
   "projectname": "psych-recruit-platform-miniapp",
   "simulatorPluginLibVersion": {},
   "packOptions": {

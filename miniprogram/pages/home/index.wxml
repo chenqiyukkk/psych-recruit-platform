@@ -47,7 +47,10 @@
     >
       <view class="card-top">
         <view class="card-title">{{item.title}}</view>
-        <view class="status status-{{item.statusClassName}}">{{item.statusText}}</view>
+        <view class="card-top-right">
+          <view wx:if="{{item.registered}}" class="status status-muted">已报名</view>
+          <view class="status status-{{item.statusClassName}}">{{item.statusText}}</view>
+        </view>
       </view>
       <view class="card-desc">{{item.description}}</view>
       <view class="card-meta">

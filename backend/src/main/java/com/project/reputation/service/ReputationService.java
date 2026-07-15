@@ -32,6 +32,11 @@ public class ReputationService {
         return toReputationResponse(user);
     }
 
+    public List<ReputationLogResponse> getMyLogs(String username){
+        User user = getUserByUsername(username);
+        return getUserLogs(user.getId());
+    }
+
     public ReputationResponse getUserReputation(Long userId){
         User user = getUserById(userId);
         return toReputationResponse(user);

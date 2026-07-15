@@ -11,19 +11,8 @@
     </button>
 
     <view wx:if="{{showDevLogin}}" class="dev-login-box">
-      <input
-        class="form-input"
-        value="{{username}}"
-        placeholder="测试用户名"
-        bindinput="onUsernameInput"
-      />
-      <input
-        class="form-input"
-        value="{{password}}"
-        password
-        placeholder="测试密码"
-        bindinput="onPasswordInput"
-      />
+      <input class="form-input" value="{{username}}" placeholder="测试用户名" bindinput="onUsernameInput" />
+      <input class="form-input" value="{{password}}" password placeholder="测试密码" bindinput="onPasswordInput" />
       <button class="ghost-button" loading="{{loginLoading}}" bindtap="login">使用测试账号进入</button>
     </view>
   </view>
@@ -31,6 +20,7 @@
   <block wx:else>
     <view wx:if="{{error}}" class="empty panel">{{error}}</view>
 
+    <!-- 个人资料（可编辑） -->
     <view wx:if="{{profile}}" class="profile-head panel">
       <view>
         <view class="role">{{profile.role}}</view>
@@ -39,6 +29,39 @@
         <view class="contact">{{profile.phone || '未填写手机号'}}</view>
       </view>
       <button class="logout-button" bindtap="logout">退出</button>
+    </view>
+
+    <!-- 被试个人资料编辑区 -->
+    <view wx:if="{{profile}}" class="profile-edit panel">
+      <view class="section-title" style="margin-top:0">我的信息（用于实验筛选，必填）</view>
+
+      <view class="edit-row">
+        <text class="edit-label">性别</text>
+        <picker range="{{genderOptions}}" value="{{editGenderIndex}}" bindchange="onEditGenderChange">
+          <view class="picker-field">{{genderOptions[editGenderIndex]}}</view>
+        </picker>
+      </view>
+
+      <view class="edit-row">
+        <text class="edit-label">年龄</text>
+        <input class="edit-input" value="{{editAgeGroup}}" placeholder="如 18-25" bindinput="onEditAgeGroupInput" />
+      </view>
+
+      <view class="edit-row">
+        <text class="edit-label">专业</text>
+        <picker range="{{majorOptions}}" value="{{editMajorIndex}}" bindchange="onEditMajorChange">
+          <view class="picker-field">{{majorOptions[editMajorIndex]}}</view>
+        </picker>
+      </view>
+
+      <view class="edit-row">
+        <text class="edit-label">利手</text>
+        <picker range="{{handednessOptions}}" value="{{editHandednessIndex}}" bindchange="onEditHandednessChange">
+          <view class="picker-field">{{handednessOptions[editHandednessIndex]}}</view>
+        </picker>
+      </view>
+
+      <button class="primary-button" loading="{{editSubmitting}}" bindtap="submitEditProfile" style="margin-top:20rpx">保存个人信息</button>
     </view>
 
     <view wx:if="{{profile}}" class="metrics">
@@ -71,6 +94,19 @@
       </view>
     </view>
 
+    <view class="section-title">收到的评价</view>
+    <view wx:if="{{!loading && reviews.length === 0}}" class="empty panel">暂无收到的评价</view>
+    <view class="registration-list">
+      <view wx:for="{{reviews}}" wx:key="id" class="registration-card panel">
+        <view class="registration-top">
+          <view class="registration-title">评分：{{item.rating}} 分</view>
+          <view class="status status-{{item.isAnonymous ? 'muted' : 'success'}}">{{item.isAnonymous ? '匿名评价' : '实名评价'}}</view>
+        </view>
+        <view wx:if="{{item.comment}}" class="registration-meta">评价内容：{{item.comment}}</view>
+        <view class="registration-meta">评价时间：{{item.createdAt}}</view>
+      </view>
+    </view>
+
     <view class="section-title">我的报名</view>
     <view wx:if="{{!loading && registrations.length === 0}}" class="empty panel">暂无报名记录</view>
     <view class="registration-list">
@@ -83,6 +119,18 @@
         <view class="registration-meta">申请时间：{{item.appliedAtText}}</view>
         <view wx:if="{{item.experimentLocation}}" class="registration-meta">地点：{{item.experimentLocation}}</view>
         <view class="registration-meta">完成状态：{{item.isCompleted ? '已完成' : '未完成'}}</view>
+        <view wx:if="{{item.paymentStatus}}" class="registration-meta">
+          付款状态：
+          <text wx:if="{{item.paymentStatus === 'PENDING'}}" style="color:#d97706">待支付</text>
+          <text wx:elif="{{item.paymentStatus === 'PAID'}}" style="color:#2563eb">已支付 ¥{{item.paymentAmount}}</text>
+          <text wx:elif="{{item.paymentStatus === 'CONFIRMED'}}" style="color:#10b981">已确认收款 ¥{{item.paymentAmount}}</text>
+          <text wx:elif="{{item.paymentStatus === 'DISPUTED'}}" style="color:#dc2626">争议中</text>
+          <text wx:else>{{item.paymentStatus}}</text>
+        </view>
+        <view wx:if="{{item.isCompleted && !item.reviewed}}" class="registration-action">
+          <button class="primary-button small" size="mini" bindtap="openReviewPage" data-item="{{item}}">评价研究者</button>
+        </view>
+        <view wx:if="{{item.isCompleted && item.reviewed}}" class="registration-meta" style="color: #10b981">已评价</view>
       </view>
     </view>
 

@@ -19,3 +19,7 @@ export function signInRegistration(id) {
 export function completeRegistration(id) {
   return http.post(`/sign-ins/registrations/${id}/complete`);
 }
+
+export function markNoShow(id) {
+  return http.post(`/sign-ins/registrations/${id}/no-show`);
+}

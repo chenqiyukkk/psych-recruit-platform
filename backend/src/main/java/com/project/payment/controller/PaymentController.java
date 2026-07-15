@@ -38,6 +38,11 @@ public class PaymentController {
     return Result.success(paymentService.myPaymentCodes(authentication.getName()));
   }
 
+  @GetMapping("/records/my")
+  public Result<List<PaymentRecordResponse>> myRecords(Authentication authentication) {
+    return Result.success(paymentService.myPaymentRecords(authentication.getName()));
+  }
+
   @GetMapping("/records/{registrationId}")
   public Result<PaymentRecordResponse> record(
       Authentication authentication, @PathVariable("registrationId") Long registrationId) {

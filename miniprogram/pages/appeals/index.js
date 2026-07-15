@@ -7,22 +7,16 @@ const appealTypes = [
   { label: '支付争议', value: 'PAYMENT_DISPUTE' },
 ];
 
-function formatCompletedExperiment(registration, experiment) {
-  const title = experiment ? experiment.title : `实验 #${registration.experimentId}`;
-  return Object.assign({}, registration, {
-    experimentTitle: title,
-    experimentLocation: experiment ? experiment.location : '',
-    pickerText: `${title} · #${registration.experimentId}`,
-  });
-}
-
 Page({
   data: {
     appealTypes,
     typeIndex: 0,
-    experimentIndex: -1,
-    completedExperiments: [],
-    completedExperimentOptions: [],
+    targetIndex: -1,
+    // 根据申诉类型动态切换的目标列表
+    targets: [],
+    targetOptions: [],
+    // 已完成实验（用于 PAYMENT_DISPUTE）
+    completedRegistrations: [],
     reason: '',
     evidenceUrls: '',
     appeals: [],
@@ -57,11 +51,13 @@ Page({
   },
 
   onTypeChange(event) {
-    this.setData({ typeIndex: Number(event.detail.value) });
+    const idx = Number(event.detail.value);
+    this.setData({ typeIndex: idx, targetIndex: -1 });
+    this.loadTargets();
   },
 
-  onExperimentChange(event) {
-    this.setData({ experimentIndex: Number(event.detail.value) });
+  onTargetChange(event) {
+    this.setData({ targetIndex: Number(event.detail.value) });
   },
 
   onReasonInput(event) {
@@ -73,12 +69,9 @@ Page({
   },
 
   loadPageData() {
-    if (!this.ensureLogin()) {
-      return Promise.resolve();
-    }
-
+    if (!this.ensureLogin()) return Promise.resolve();
     this.setData({ loading: true, error: '' });
-    return Promise.all([this.loadAppeals(), this.loadCompletedExperiments()])
+    return Promise.all([this.loadAppeals(), this.loadTargets()])
       .catch((error) => {
         this.setData({ error: error.message || '申诉页面加载失败' });
       })
@@ -93,62 +86,85 @@ Page({
     });
   },
 
-  loadCompletedExperiments() {
-    return api.getRegistrations().then((registrations) => {
-      const completed = (Array.isArray(registrations) ? registrations : [])
-        .map(formatRegistration)
-        .filter((item) => item.isCompleted && item.experimentId);
-      const ids = Array.from(new Set(completed.map((item) => item.experimentId)));
+  loadTargets() {
+    const type = this.data.appealTypes[this.data.typeIndex].value;
+    if (type === 'REPUTATION_DEDUCTION') {
+      return this.loadReputationTargets();
+    } else if (type === 'LOW_RATING') {
+      return this.loadReviewTargets();
+    } else {
+      return this.loadPaymentTargets();
+    }
+  },
 
-      return Promise.all(
-        ids.map((id) =>
-          api
-            .getExperiment(id)
-            .then((experiment) => [id, experiment])
-            .catch(() => [id, null])
-        )
-      ).then((pairs) => {
-        const experimentMap = pairs.reduce((map, pair) => {
-          const [id, experiment] = pair;
-          map[id] = experiment;
-          return map;
-        }, {});
-        const completedExperiments = completed.map((item) =>
-          formatCompletedExperiment(item, experimentMap[item.experimentId])
-        );
-
-        this.setData({
-          completedExperiments,
-          completedExperimentOptions: completedExperiments.map((item) => item.pickerText),
-          experimentIndex: completedExperiments.length ? Math.max(this.data.experimentIndex, 0) : -1,
-        });
+  // 信誉扣分：加载信誉变动日志，选扣分的
+  loadReputationTargets() {
+    return api.getMyReputationLogs().then((logs) => {
+      const list = (Array.isArray(logs) ? logs : [])
+        .filter((l) => l.scoreDelta < 0)
+        .map((l) => ({
+          id: l.id,
+          text: `${l.changeType} · ${l.scoreDelta > 0 ? '+' : ''}${l.scoreDelta}分 · ${l.reason || '无说明'}`,
+        }));
+      this.setData({
+        targets: list,
+        targetOptions: list.map((t) => t.text),
+        targetIndex: list.length ? Math.max(0, Math.min(this.data.targetIndex, list.length - 1)) : -1,
       });
+    }).catch(() => {
+      this.setData({ targets: [], targetOptions: [], targetIndex: -1 });
+    });
+  },
+
+  // 低评分：加载收到的评价
+  loadReviewTargets() {
+    return api.getReceivedReviews().then((reviews) => {
+      const list = (Array.isArray(reviews) ? reviews : []).map((r) => ({
+        id: r.id,
+        text: `评分${r.rating}分 · ${r.comment || '无评论'} · ${r.createdAt || ''}`,
+      }));
+      this.setData({
+        targets: list,
+        targetOptions: list.map((t) => t.text),
+        targetIndex: list.length ? Math.max(0, Math.min(this.data.targetIndex, list.length - 1)) : -1,
+      });
+    }).catch(() => {
+      this.setData({ targets: [], targetOptions: [], targetIndex: -1 });
+    });
+  },
+
+  // 支付争议：加载支付记录
+  loadPaymentTargets() {
+    return api.getMyPaymentRecords().then((records) => {
+      const list = (Array.isArray(records) ? records : []).map((r) => ({
+        id: r.id,
+        text: `金额: ${r.amount || '--'}元 · 状态: ${r.status} · 报名#${r.registrationId}`,
+      }));
+      this.setData({
+        targets: list,
+        targetOptions: list.map((t) => t.text),
+        targetIndex: list.length ? Math.max(0, Math.min(this.data.targetIndex, list.length - 1)) : -1,
+      });
+    }).catch(() => {
+      this.setData({ targets: [], targetOptions: [], targetIndex: -1 });
     });
   },
 
   buildEvidenceUrls() {
     const value = this.data.evidenceUrls.trim();
-    if (!value) {
-      return '';
-    }
-
+    if (!value) return '';
     return JSON.stringify(
-      value
-        .split(/\n|,|，/)
-        .map((url) => url.trim())
-        .filter(Boolean)
+      value.split(/\n|,|，/).map((url) => url.trim()).filter(Boolean)
     );
   },
 
   submitAppeal() {
-    if (!this.ensureLogin() || this.data.submitting) {
-      return;
-    }
+    if (!this.ensureLogin() || this.data.submitting) return;
 
-    const selected = this.data.completedExperiments[this.data.experimentIndex];
+    const target = this.data.targets[this.data.targetIndex];
     const reason = this.data.reason.trim();
-    if (!selected) {
-      wx.showToast({ title: '请选择已完成实验', icon: 'none' });
+    if (!target) {
+      wx.showToast({ title: '请选择申诉对象', icon: 'none' });
       return;
     }
     if (reason.length < 10) {
@@ -158,13 +174,12 @@ Page({
 
     const appealType = this.data.appealTypes[this.data.typeIndex].value;
     this.setData({ submitting: true });
-    api
-      .createAppeal({
-        appealType,
-        targetId: selected.experimentId,
-        reason,
-        evidenceUrls: this.buildEvidenceUrls(),
-      })
+    api.createAppeal({
+      appealType,
+      targetId: target.id,
+      reason,
+      evidenceUrls: this.buildEvidenceUrls(),
+    })
       .then(() => {
         wx.showToast({ title: '申诉已提交', icon: 'success' });
         this.setData({ reason: '', evidenceUrls: '' });
@@ -182,14 +197,12 @@ Page({
     const appeal = event.currentTarget.dataset.appeal;
     const content = [
       `申诉类型：${appeal.appealTypeText}`,
-      `关联实验：#${appeal.targetId}`,
+      `关联ID：#${appeal.targetId}`,
       `提交时间：${appeal.createdAtText}`,
       `申诉理由：${appeal.reason || '无'}`,
       `当前状态：${appeal.statusText}`,
       appeal.reviewComment ? `审核意见：${appeal.reviewComment}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
+    ].filter(Boolean).join('\n');
 
     wx.showModal({
       title: '申诉详情',

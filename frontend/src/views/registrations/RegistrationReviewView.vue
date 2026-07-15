@@ -53,6 +53,7 @@
               <el-button link type="danger" :disabled="row.status !== 'PENDING'" @click="reject(row)">拒绝</el-button>
               <el-button link type="primary" :disabled="row.status !== 'APPROVED' || !!row.signInTime" @click="signIn(row)">签到</el-button>
               <el-button link :disabled="!row.signInTime || row.isCompleted" @click="complete(row)">完成</el-button>
+              <el-button link type="danger" :disabled="row.status !== 'APPROVED' || !!row.signInTime || row.isCompleted" @click="noShow(row)">爽约</el-button>
             </div>
           </template>
         </el-table-column>
@@ -67,12 +68,13 @@
 <script setup>
 import { ref } from 'vue';
 import { useRoute } from 'vue-router';
-import { ElMessage } from 'element-plus';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import { getExperiments } from '../../api/experiments';
 import {
   approveRegistration,
   completeRegistration,
   getExperimentRegistrations,
+  markNoShow,
   rejectRegistration,
   signInRegistration,
 } from '../../api/registrations';
@@ -123,7 +125,18 @@ async function signIn(row) {
 
 async function complete(row) {
   await completeRegistration(row.id);
-  ElMessage.success(`报名 ${row.id} 已标记完成`);
+  ElMessage.success(`报名 ${row.id} 已标记完成，被试信誉分 +2`);
+  await loadRegistrations();
+}
+
+async function noShow(row) {
+  await ElMessageBox.confirm(
+    `确认将报名 ${row.id} 标记为爽约吗？被试将被扣除 20 信誉分。`,
+    '标记爽约',
+    { type: 'warning', confirmButtonText: '确认爽约', cancelButtonText: '取消' },
+  );
+  await markNoShow(row.id);
+  ElMessage.success(`报名 ${row.id} 已标记爽约，被试信誉分 -20`);
   await loadRegistrations();
 }
 

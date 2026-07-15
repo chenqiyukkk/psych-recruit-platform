@@ -13,13 +13,20 @@ import com.project.experiment.entity.Experiment;
 import com.project.experiment.entity.ExperimentTag;
 import com.project.experiment.repo.ExperimentRepository;
 import com.project.experiment.repo.ExperimentTagRepository;
+import com.project.notification.service.NotificationService;
+import com.project.registration.RegistrationConstants;
+import com.project.registration.repo.RegistrationRepository;
 import com.project.user.UserRoles;
 import com.project.user.entity.User;
 import com.project.user.repo.UserRepository;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -38,6 +45,8 @@ public class ExperimentService {
   private final ExperimentRepository experimentRepository;
   private final ExperimentTagRepository experimentTagRepository;
   private final UserRepository userRepository;
+  private final NotificationService notificationService;
+  private final RegistrationRepository registrationRepository;
   private final ObjectMapper objectMapper = new ObjectMapper();
 
   @Transactional
@@ -171,7 +180,9 @@ public class ExperimentService {
         experimentTagRepository.findByExperimentId(id).stream()
             .map(t -> new ExperimentTagResponse(t.getId(), t.getTagName(), t.getCoolingDays()))
             .collect(Collectors.toList());
-    return toResponse(experiment, tags);
+    long approvedCount = registrationRepository.countByExperimentIdAndStatusIn(
+        id, Set.of(RegistrationConstants.STATUS_APPROVED));
+    return toResponse(experiment, tags, approvedCount);
   }
 
   public Page<ExperimentResponse> query(
@@ -179,19 +190,113 @@ public class ExperimentService {
     User requester = getUserByUsername(requesterUsername);
     Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
     Specification<Experiment> spec = buildSpec(query, requester);
-    return experimentRepository.findAll(spec, pageable).map(e -> toResponse(e, Collections.emptyList()));
+    Page<Experiment> experimentPage = experimentRepository.findAll(spec, pageable);
+
+    // 批量加载标签，避免 N+1
+    List<Long> ids = experimentPage.getContent().stream().map(Experiment::getId).collect(Collectors.toList());
+    Map<Long, List<ExperimentTagResponse>> tagMap =
+        experimentTagRepository.findByExperimentIdIn(ids).stream()
+            .collect(Collectors.groupingBy(
+                ExperimentTag::getExperimentId,
+                Collectors.mapping(
+                    t -> new ExperimentTagResponse(t.getId(), t.getTagName(), t.getCoolingDays()),
+                    Collectors.toList())));
+
+    // 批量加载已通过报名人数
+    Map<Long, Long> approvedCountMap = new HashMap<>();
+    if (!ids.isEmpty()) {
+      List<Object[]> rows = registrationRepository.countApprovedByExperimentIds(
+          ids, Set.of(RegistrationConstants.STATUS_APPROVED));
+      for (Object[] row : rows) {
+        approvedCountMap.put((Long) row[0], (Long) row[1]);
+      }
+    }
+
+    return experimentPage.map(e -> toResponse(e,
+        tagMap.getOrDefault(e.getId(), Collections.emptyList()),
+        approvedCountMap.getOrDefault(e.getId(), 0L)));
   }
 
   @Transactional
   public void publish(Long id, String operatorUsername) {
     Experiment experiment = experimentRepository.findById(id).orElseThrow(() -> new ApiException(404, "实验不存在"));
     assertOperatorCanManage(experiment, operatorUsername);
-    if (!ExperimentConstants.STATUS_DRAFT.equals(experiment.getStatus())) {
-      throw new ApiException(400, "仅草稿状态可发布");
+    // 研究者只能发布已通过审核的实验（PENDING_REVIEW 由管理员改为此状态后再发布）
+    // 管理员可直接发布
+    User operator = getUserByUsername(operatorUsername);
+    if (UserRoles.RESEARCHER.equals(operator.getRole())) {
+      if (!ExperimentConstants.STATUS_PENDING_REVIEW.equals(experiment.getStatus())) {
+        throw new ApiException(400, "实验需先通过管理员审核才能发布");
+      }
+    } else if (UserRoles.ADMIN.equals(operator.getRole())) {
+      // 管理员审批通过即发布
+    }
+    // 研究者评分过低（<2分且有至少3次评价）禁止发布
+    User organizer = userRepository.findById(experiment.getOrganizerId()).orElse(null);
+    if (organizer != null && organizer.getResearcherRating() != null
+        && organizer.getResearcherRating().compareTo(new java.math.BigDecimal("2.0")) < 0
+        && organizer.getTotalReviews() >= 3) {
+      throw new ApiException(400, "研究者评分过低（" + organizer.getResearcherRating() + "分），需至少2分才能发布实验");
     }
     experiment.setStatus(ExperimentConstants.STATUS_PUBLISHED);
     experiment.setUpdatedAt(LocalDateTime.now());
     experimentRepository.save(experiment);
+  }
+
+  @Transactional
+  public void submitForReview(Long id, String operatorUsername) {
+    Experiment experiment = experimentRepository.findById(id).orElseThrow(() -> new ApiException(404, "实验不存在"));
+    assertOperatorCanManage(experiment, operatorUsername);
+    if (!ExperimentConstants.STATUS_DRAFT.equals(experiment.getStatus())) {
+      throw new ApiException(400, "仅草稿状态可提交审核");
+    }
+    experiment.setStatus(ExperimentConstants.STATUS_PENDING_REVIEW);
+    experiment.setUpdatedAt(LocalDateTime.now());
+    experimentRepository.save(experiment);
+  }
+
+  @Transactional
+  public void approve(Long id, String operatorUsername) {
+    User operator = getUserByUsername(operatorUsername);
+    if (!UserRoles.ADMIN.equals(operator.getRole())) {
+      throw new ApiException(403, "仅管理员可审批实验");
+    }
+    Experiment experiment = experimentRepository.findById(id).orElseThrow(() -> new ApiException(404, "实验不存在"));
+    if (!ExperimentConstants.STATUS_PENDING_REVIEW.equals(experiment.getStatus())) {
+      throw new ApiException(400, "仅待审核状态可审批");
+    }
+    experiment.setStatus(ExperimentConstants.STATUS_PUBLISHED);
+    experiment.setUpdatedAt(LocalDateTime.now());
+    experimentRepository.save(experiment);
+
+    // 通知研究者审核通过
+    notificationService.send(experiment.getOrganizerId(),
+        "实验审核通过", "你提交的实验「" + experiment.getTitle() + "」已通过管理员审核，可前往实验列表发布。",
+        "EXPERIMENT_APPROVED", "experiment", experiment.getId());
+
+  }
+
+  @Transactional
+  public void reject(Long id, String operatorUsername, String reason) {
+    User operator = getUserByUsername(operatorUsername);
+    if (!UserRoles.ADMIN.equals(operator.getRole())) {
+      throw new ApiException(403, "仅管理员可驳回实验");
+    }
+    Experiment experiment = experimentRepository.findById(id).orElseThrow(() -> new ApiException(404, "实验不存在"));
+    if (!ExperimentConstants.STATUS_PENDING_REVIEW.equals(experiment.getStatus())) {
+      throw new ApiException(400, "仅待审核状态可驳回");
+    }
+    experiment.setStatus(ExperimentConstants.STATUS_DRAFT);
+    experiment.setReviewComment(reason != null ? reason.trim() : "管理员驳回了该实验，请修改后重新提交");
+    experiment.setUpdatedAt(LocalDateTime.now());
+    experimentRepository.save(experiment);
+
+    // 通知研究者被驳回
+    String rejectReason = experiment.getReviewComment();
+    notificationService.send(experiment.getOrganizerId(),
+        "实验审核被驳回", "你提交的实验「" + experiment.getTitle() + "」未通过审核。"
+            + (rejectReason != null ? "原因：" + rejectReason : ""),
+        "EXPERIMENT_REJECTED", "experiment", experiment.getId());
   }
 
   @Transactional
@@ -303,7 +408,12 @@ public class ExperimentService {
         predicates.add(cb.or(cb.like(root.get("title"), like), cb.like(root.get("description"), like)));
       }
       if (StringUtils.hasText(q.getStatus())) {
-        predicates.add(cb.equal(root.get("status"), q.getStatus().trim()));
+        String[] statuses = q.getStatus().trim().split("\\s*,\\s*");
+        if (statuses.length == 1) {
+          predicates.add(cb.equal(root.get("status"), statuses[0]));
+        } else {
+          predicates.add(root.get("status").in((Object[]) statuses));
+        }
       }
       if (StringUtils.hasText(q.getRiskLevel())) {
         predicates.add(cb.equal(root.get("riskLevel"), q.getRiskLevel().trim()));
@@ -326,13 +436,14 @@ public class ExperimentService {
     };
   }
 
-  private static ExperimentResponse toResponse(Experiment e, List<ExperimentTagResponse> tags) {
+  private static ExperimentResponse toResponse(Experiment e, List<ExperimentTagResponse> tags, long approvedCount) {
     return new ExperimentResponse(
         e.getId(),
         e.getTitle(),
         e.getDescription(),
         e.getLocation(),
         e.getParticipantLimit(),
+        approvedCount,
         e.getStartTime(),
         e.getEndTime(),
         e.getEthicsApprovalNo(),
@@ -343,6 +454,7 @@ public class ExperimentService {
         e.getScreeningCriteria(),
         e.getExcludeTags(),
         e.getStatus(),
+        e.getReviewComment(),
         e.getOrganizerId(),
         e.getCreatedAt(),
         e.getUpdatedAt(),

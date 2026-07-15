@@ -66,6 +66,17 @@ public class PaymentService {
         .collect(Collectors.toList());
   }
 
+  public List<PaymentRecordResponse> myPaymentRecords(String username) {
+    Long userId =
+        userRepository
+            .findByUsername(username)
+            .map(u -> u.getId())
+            .orElseThrow(() -> new ApiException(401, "未登录"));
+    return paymentRecordRepository.findByPayeeUserIdOrderByCreatedAtDesc(userId).stream()
+        .map(r -> toResponse(r))
+        .collect(Collectors.toList());
+  }
+
   public PaymentRecordResponse getPaymentRecord(Long registrationId, String username) {
     PaymentRecord record =
         paymentRecordRepository

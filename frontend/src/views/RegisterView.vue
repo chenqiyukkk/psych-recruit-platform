@@ -44,7 +44,13 @@
           <el-input v-model="form.username" placeholder="请输入用户名" size="large" />
         </el-form-item>
         <el-form-item label="手机号" prop="phone">
-          <el-input v-model="form.phone" placeholder="可选，便于后续联系" size="large" />
+          <el-input
+            v-model="form.phone"
+            placeholder="请输入11位手机号"
+            size="large"
+            maxlength="11"
+            @input="form.phone = form.phone.replace(/\D/g, '')"
+          />
         </el-form-item>
         <el-form-item label="邮箱" prop="email">
           <el-input v-model="form.email" placeholder="可选，便于接收通知" size="large" />
@@ -101,6 +107,22 @@ const form = reactive({
 
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  phone: [
+    {
+      validator: (_rule, value, callback) => {
+        if (!value) {
+          callback();
+          return;
+        }
+        if (!/^1[3-9]\d{9}$/.test(value)) {
+          callback(new Error('请输入正确的11位手机号'));
+          return;
+        }
+        callback();
+      },
+      trigger: 'blur',
+    },
+  ],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   confirmPassword: [
     { required: true, message: '请再次输入密码', trigger: 'blur' },

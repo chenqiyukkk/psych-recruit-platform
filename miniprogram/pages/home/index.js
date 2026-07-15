@@ -80,16 +80,37 @@ Page({
       loadMoreError: '',
     });
 
-    return api
-      .getExperiments({
+    return Promise.all([
+      api.getExperiments({
         keyword: this.data.keyword.trim(),
-        status: 'PUBLISHED',
+        status: 'PUBLISHED,RECRUITING,FULL',
         page: nextPage,
         size: this.data.size,
-      })
-      .then((pageData) => {
+      }),
+      reset ? api.getRegistrations().catch(() => []) : Promise.resolve(null),
+    ])
+      .then(([pageData, registrations]) => {
         const list = pageData.list.map(formatExperiment);
         const experiments = reset ? list : this.data.experiments.concat(list);
+
+        // 标记已报名的实验
+        if (registrations) {
+          const registeredIds = new Set(
+            (Array.isArray(registrations) ? registrations : []).map((r) => r.experimentId)
+          );
+          experiments.forEach((e) => {
+            e.registered = registeredIds.has(e.id);
+          });
+        } else {
+          // 保留之前标记
+          const prevIds = new Set(
+            this.data.experiments.filter((e) => e.registered).map((e) => e.id)
+          );
+          experiments.forEach((e) => {
+            e.registered = prevIds.has(e.id);
+          });
+        }
+
         this.setData({
           experiments,
           page: pageData.page,

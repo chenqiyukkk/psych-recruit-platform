@@ -18,7 +18,11 @@
           <template #header><strong>基础信息</strong></template>
           <el-descriptions :column="2" border>
             <el-descriptions-item label="地点">{{ detail.location || '--' }}</el-descriptions-item>
-            <el-descriptions-item label="参与人数上限">{{ detail.participantLimit || '--' }} 人</el-descriptions-item>
+            <el-descriptions-item label="已报名/上限">
+              <span :style="{ color: (detail.approvedCount ?? 0) >= (detail.participantLimit ?? 0) && detail.participantLimit ? '#dc2626' : '' }">
+                {{ detail.approvedCount ?? 0 }} / {{ detail.participantLimit || '--' }}
+              </span>
+            </el-descriptions-item>
             <el-descriptions-item label="伦理审批编号">{{ detail.ethicsApprovalNo || '--' }}</el-descriptions-item>
             <el-descriptions-item label="风险等级">{{ riskText(detail.riskLevel) }}</el-descriptions-item>
             <el-descriptions-item label="支付方式">{{ paymentText(detail.paymentMethod) }}</el-descriptions-item>
