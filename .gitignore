@@ -33,3 +33,27 @@ coverage/
 # Temp
 tmp/
 temp/
+
+# Project root config (miniprogram uses its own)
+/project.config.json
+/project.private.config.json
+
+# Test / temp files
+ignore.me
+scripts/clean_all.sql
+scripts/deploy.py
+scripts/test_api.py
+scripts/fix_screening.py
+scripts/fix_screening.sql
+scripts/prepare_video3.sql
+scripts/video4_setup.sql
+scripts/video3_checklist.md
+scripts/exps.json
+
+# Recording plan (personal)
+/视频录制方案.md
+/视频录制方案.pdf
+
+# Backend logs
+backend/*.log
+backend/backend-run.err.log

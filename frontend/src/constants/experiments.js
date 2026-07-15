@@ -1,5 +1,6 @@
 export const EXPERIMENT_STATUSES = [
   { label: '草稿', value: 'DRAFT', type: 'info' },
+  { label: '待审核', value: 'PENDING_REVIEW', type: 'warning' },
   { label: '已发布', value: 'PUBLISHED', type: 'success' },
   { label: '招募中', value: 'RECRUITING', type: 'warning' },
   { label: '已满员', value: 'FULL', type: 'danger' },
@@ -32,6 +33,7 @@ export const HANDEDNESS_OPTIONS = [
 ];
 
 export const MAJOR_CATEGORY_OPTIONS = [
+  { label: '不限', value: '不限' },
   { label: '心理学类', value: '心理学类' },
   { label: '计算机类', value: '计算机类' },
   { label: '文学类', value: '文学类' },

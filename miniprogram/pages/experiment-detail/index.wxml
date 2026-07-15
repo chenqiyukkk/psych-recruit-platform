@@ -60,7 +60,13 @@
       <view class="section-content">{{experiment.paymentDescription}}</view>
     </view>
 
-    <view class="apply-bar">
+    <view wx:if="{{experiment.status === 'FULL'}}" class="apply-bar apply-bar--full">
+      <view>
+        <view class="apply-price">本实验已满员</view>
+        <view class="apply-note">暂时无法报名，请关注其他实验</view>
+      </view>
+    </view>
+    <view wx:else class="apply-bar">
       <view>
         <view class="apply-price">{{experiment.paymentText}}</view>
         <view class="apply-note">提交后进入待审核</view>

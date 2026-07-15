@@ -92,6 +92,12 @@ const routes = [
         component: () => import('../views/config/ConfigManagementView.vue'),
         meta: { title: '系统配置', roles: [ROLE_ADMIN] },
       },
+      {
+        path: '/admin/users',
+        name: 'admin-users',
+        component: () => import('../views/admin/AdminUsersView.vue'),
+        meta: { title: '用户管理', roles: [ROLE_ADMIN] },
+      },
     ],
   },
 ];
@@ -104,18 +110,21 @@ const router = createRouter({
 router.beforeEach(async (to) => {
   const authStore = useAuthStore();
 
-  if (!authStore.initialized && authStore.token) {
+  // 访问公开页面（登录/注册）时不阻塞等待 profile，直接放行
+  if (!authStore.initialized && authStore.token && !to.meta.guestOnly) {
     try {
       await authStore.fetchProfile();
     } catch (_error) {
-      if (to.path !== '/login') {
-        return {
-          path: '/login',
-          query: { redirect: to.fullPath },
-        };
-      }
+      return {
+        path: '/login',
+        query: { redirect: to.fullPath },
+      };
     }
   } else if (!authStore.initialized) {
+    // 有 token 但去公开页面，后台静默验证不阻塞
+    if (authStore.token) {
+      authStore.fetchProfile().catch(() => {});
+    }
     authStore.initialized = true;
   }
 

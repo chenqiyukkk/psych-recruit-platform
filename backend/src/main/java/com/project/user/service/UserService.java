@@ -6,6 +6,7 @@ import com.project.user.UserRoles;
 import com.project.user.dto.AuthLoginRequest;
 import com.project.user.dto.AuthLoginResponse;
 import com.project.user.dto.AuthRegisterRequest;
+import com.project.user.dto.UserListResponse;
 import com.project.user.dto.UserProfileResponse;
 import com.project.user.dto.UserProfileUpdateRequest;
 import com.project.user.dto.WxLoginRequest;
@@ -14,7 +15,9 @@ import com.project.user.entity.User;
 import com.project.user.repo.UserRepository;
 import com.project.user.wechat.WechatMiniAppClient;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -57,6 +60,9 @@ public class UserService {
         userRepository
             .findByUsername(request.getUsername())
             .orElseThrow(() -> new ApiException(401, "用户名或密码错误"));
+    if ("DISABLED".equals(user.getRole())) {
+      throw new ApiException(403, "该账号已被禁用，请联系管理员");
+    }
     if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
       throw new ApiException(401, "用户名或密码错误");
     }
@@ -94,6 +100,18 @@ public class UserService {
             .orElseThrow(() -> new ApiException(404, "用户不存在"));
     user.setPhone(request.getPhone());
     user.setEmail(request.getEmail());
+    if (request.getGender() != null) {
+      user.setGender(request.getGender());
+    }
+    if (request.getAgeGroup() != null) {
+      user.setAgeGroup(request.getAgeGroup());
+    }
+    if (request.getMajorCategory() != null) {
+      user.setMajorCategory(request.getMajorCategory());
+    }
+    if (request.getHandedness() != null) {
+      user.setHandedness(request.getHandedness());
+    }
     return toProfile(userRepository.save(user));
   }
 
@@ -106,6 +124,49 @@ public class UserService {
       return 0.0;
     }
     return user.getResearcherRating().doubleValue();
+  }
+
+  public List<UserListResponse> listAll() {
+    return userRepository.findAll().stream()
+        .map(UserListResponse::from)
+        .collect(java.util.stream.Collectors.toList());
+  }
+
+  @Transactional
+  public void deleteUser(Long userId) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new ApiException(404, "用户不存在"));
+    if (UserRoles.ADMIN.equals(user.getRole())) {
+      throw new ApiException(400, "不能删除管理员账号");
+    }
+    // 软禁用：改为 DISABLED 角色，保留数据满足外键约束
+    user.setRole("DISABLED");
+    userRepository.save(user);
+  }
+
+  @Transactional
+  public void enableUser(Long userId, String role) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new ApiException(404, "用户不存在"));
+    if (!"DISABLED".equals(user.getRole())) {
+      throw new ApiException(400, "该账号未被禁用");
+    }
+    if (role == null || (!UserRoles.SUBJECT.equals(role) && !UserRoles.RESEARCHER.equals(role))) {
+      role = UserRoles.SUBJECT;
+    }
+    user.setRole(role);
+    userRepository.save(user);
+  }
+
+  @Transactional
+  public void resetPassword(Long userId, String newPassword) {
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new ApiException(404, "用户不存在"));
+    if (newPassword == null || newPassword.trim().length() < 6) {
+      throw new ApiException(400, "密码至少6位");
+    }
+    user.setPassword(passwordEncoder.encode(newPassword.trim()));
+    userRepository.save(user);
   }
 
   private User createWechatSubject(String openid) {
@@ -136,7 +197,7 @@ public class UserService {
   }
 
   private static UserProfileResponse toProfile(User user) {
-    return new UserProfileResponse(
+    UserProfileResponse r = new UserProfileResponse(
         user.getId(),
         user.getUsername(),
         user.getPhone(),
@@ -145,5 +206,10 @@ public class UserService {
         user.getReputationScore(),
         user.getResearcherRating(),
         user.getTotalReviews());
+    r.setGender(user.getGender());
+    r.setAgeGroup(user.getAgeGroup());
+    r.setMajorCategory(user.getMajorCategory());
+    r.setHandedness(user.getHandedness());
+    return r;
   }
 }

@@ -13,15 +13,19 @@
       <view class="picker-field">{{appealTypes[typeIndex].label}}</view>
     </picker>
 
-    <view class="field-label">选择已完成实验</view>
+    <view class="field-label">
+      <block wx:if="{{appealTypes[typeIndex].value === 'REPUTATION_DEDUCTION'}}">选择被扣分记录</block>
+      <block wx:elif="{{appealTypes[typeIndex].value === 'LOW_RATING'}}">选择被评价记录</block>
+      <block wx:else>选择支付记录</block>
+    </view>
     <picker
-      range="{{completedExperimentOptions}}"
-      value="{{experimentIndex}}"
-      disabled="{{completedExperimentOptions.length === 0}}"
-      bindchange="onExperimentChange"
+      range="{{targetOptions}}"
+      value="{{targetIndex}}"
+      disabled="{{targetOptions.length === 0}}"
+      bindchange="onTargetChange"
     >
-      <view class="picker-field {{completedExperimentOptions.length === 0 ? 'placeholder' : ''}}">
-        {{completedExperimentOptions.length ? completedExperimentOptions[experimentIndex] : '暂无已完成实验可申诉'}}
+      <view class="picker-field {{targetOptions.length === 0 ? 'placeholder' : ''}}">
+        {{targetOptions.length ? targetOptions[targetIndex] : '暂无相关记录，请先完成实验或等待扣分/评价'}}
       </view>
     </picker>
 

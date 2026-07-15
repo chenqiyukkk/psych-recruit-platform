@@ -59,12 +59,30 @@
             <el-row :gutter="16">
               <el-col :xs="24" :md="12">
                 <el-form-item label="开始时间" prop="startTime">
-                  <el-date-picker v-model="form.startTime" type="datetime" style="width: 100%" placeholder="选择开始时间" value-format="YYYY-MM-DDTHH:mm:ss" />
+                  <el-date-picker
+                    v-model="form.startTime"
+                    type="datetime"
+                    style="width: 100%"
+                    placeholder="选择开始时间"
+                    value-format="YYYY-MM-DDTHH:mm:ss"
+                    :disabled-date="disabledStartDate"
+                    :default-time="defaultStartTime"
+                    editable="false"
+                  />
                 </el-form-item>
               </el-col>
               <el-col :xs="24" :md="12">
                 <el-form-item label="结束时间" prop="endTime">
-                  <el-date-picker v-model="form.endTime" type="datetime" style="width: 100%" placeholder="选择结束时间" value-format="YYYY-MM-DDTHH:mm:ss" />
+                  <el-date-picker
+                    v-model="form.endTime"
+                    type="datetime"
+                    style="width: 100%"
+                    placeholder="选择结束时间"
+                    value-format="YYYY-MM-DDTHH:mm:ss"
+                    :disabled-date="disabledEndDate"
+                    :default-time="defaultEndTime"
+                    editable="false"
+                  />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -274,6 +292,29 @@ const rules = {
 
 const isEdit = computed(() => Boolean(route.params.id));
 
+const defaultStartTime = new Date(0, 0, 0, 8, 0, 0);  // 默认 08:00
+const defaultEndTime = new Date(0, 0, 0, 18, 0, 0);    // 默认 18:00
+
+function disabledStartDate(date) {
+  // 开始时间不能选今天之前的日期
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date.getTime() < today.getTime();
+}
+
+function disabledEndDate(date) {
+  // 结束时间不能选今天之前，且不能早于开始时间
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (date.getTime() < today.getTime()) return true;
+  if (form.startTime) {
+    const start = new Date(form.startTime);
+    start.setHours(0, 0, 0, 0);
+    return date.getTime() < start.getTime();
+  }
+  return false;
+}
+
 function createDefaultScreening() {
   return {
     gender: 'ANY',
@@ -398,7 +439,7 @@ function buildScreeningCriteria() {
   if (screening.minAge !== null || screening.maxAge !== null) {
     include.age_range = [screening.minAge ?? null, screening.maxAge ?? null];
   }
-  if (screening.majorCategories.length) {
+  if (screening.majorCategories.length && !screening.majorCategories.includes('不限')) {
     include.major_categories = screening.majorCategories;
   }
   if (screening.handedness && screening.handedness !== 'ANY') {

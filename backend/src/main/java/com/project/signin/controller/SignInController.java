@@ -40,4 +40,13 @@ public class SignInController {
         return Result.success(signInService.complete(authentication.getName(),registrationId));
     }
 
+    @PostMapping("/registrations/{registrationId}/no-show")
+    @PreAuthorize("hasAnyRole('研究者','管理员')")
+    @Operation(summary = "标记爽约", description = "研究者或管理员将已通过但未签到的报名标记为爽约，被试扣 20 信誉分")
+    public Result<RegistrationResponse> markNoShow(
+            Authentication authentication,
+            @PathVariable("registrationId") Long registrationId){
+        return Result.success(signInService.markNoShow(authentication.getName(),registrationId));
+    }
+
 }

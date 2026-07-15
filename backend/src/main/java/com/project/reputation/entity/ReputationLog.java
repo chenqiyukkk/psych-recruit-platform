@@ -19,6 +19,8 @@ public class ReputationLog {
     @Column(name = "user_id",nullable = false)
     private Long userId;
 
+    @Column(name = "registration_id")
+    private Long registrationId;
 
     @Column(name = "change_type",nullable = false,length = 64)
     private String changeType;

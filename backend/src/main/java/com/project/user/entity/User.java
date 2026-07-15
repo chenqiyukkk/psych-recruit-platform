@@ -33,6 +33,18 @@ public class User {
   @Column(length = 128)
   private String email;
 
+  @Column(length = 16)
+  private String gender;
+
+  @Column(length = 32)
+  private String ageGroup;
+
+  @Column(length = 64)
+  private String majorCategory;
+
+  @Column(length = 16)
+  private String handedness;
+
   @Column(name = "wechat_openid", length = 128, unique = true)
   private String wechatOpenid;
 

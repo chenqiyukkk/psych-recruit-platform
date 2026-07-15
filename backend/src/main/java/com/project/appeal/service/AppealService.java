@@ -7,6 +7,17 @@ import com.project.appeal.entity.Appeal;
 import com.project.appeal.repo.AppealRepository;
 import com.project.common.exception.ApiException;
 import com.project.notification.service.NotificationService;
+import com.project.payment.entity.PaymentRecord;
+import com.project.payment.repo.PaymentRecordRepository;
+import com.project.registration.RegistrationConstants;
+import com.project.registration.entity.Registration;
+import com.project.registration.repo.RegistrationRepository;
+import com.project.reputation.entity.ReputationLog;
+import com.project.reputation.repo.ReputationRepository;
+import com.project.review.entity.Review;
+import com.project.review.repo.ReviewRepository;
+import com.project.user.entity.User;
+import com.project.user.repo.UserRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -33,6 +44,11 @@ public class AppealService {
 
     private final AppealRepository appealRepository;
     private final NotificationService notificationService;
+    private final ReputationRepository reputationRepository;
+    private final ReviewRepository reviewRepository;
+    private final PaymentRecordRepository paymentRecordRepository;
+    private final UserRepository userRepository;
+    private final RegistrationRepository registrationRepository;
 
     // ==================== 用户操作 ====================
 
@@ -114,10 +130,106 @@ public class AppealService {
         appeal.setReviewedAt(LocalDateTime.now());
         appealRepository.save(appeal);
 
+        // 审核通过时，根据申诉类型执行实际撤销操作
+        if ("APPROVED".equals(request.getDecision())) {
+            executeRemediation(appeal);
+        }
+
         // 向申诉人发送审核结果通知
         sendReviewNotification(appeal);
 
         return AppealResponse.from(appeal);
+    }
+
+    // ==================== 审核通过后的撤销逻辑 ====================
+
+    /**
+     * 根据申诉类型执行对应的撤销操作。
+     */
+    private void executeRemediation(Appeal appeal) {
+        try {
+            switch (appeal.getAppealType()) {
+                case "REPUTATION_DEDUCTION":
+                    reverseReputationDeduction(appeal);
+                    break;
+                case "LOW_RATING":
+                    reverseLowRating(appeal);
+                    break;
+                case "PAYMENT_DISPUTE":
+                    resolvePaymentDispute(appeal);
+                    break;
+            }
+        } catch (Exception e) {
+            // 撤销失败不影响申诉状态变更，记录日志即可
+            System.err.println("Appeal remediation failed for appeal " + appeal.getId() + ": " + e.getMessage());
+        }
+    }
+
+    /**
+     * 撤销信誉扣分：将扣分记录对应的分数加回用户信誉分。
+     */
+    private void reverseReputationDeduction(Appeal appeal) {
+        reputationRepository.findById(appeal.getTargetId()).ifPresent(log -> {
+            // 恢复信誉分
+            User user = userRepository.findById(log.getUserId()).orElse(null);
+            if (user != null && log.getScoreDelta() < 0) {
+                user.setReputationScore(user.getReputationScore() - log.getScoreDelta());
+                userRepository.save(user);
+            }
+            // 恢复报名记录（爽约 → 已通过）
+            if (log.getRegistrationId() != null) {
+                registrationRepository.findById(log.getRegistrationId()).ifPresent(reg -> {
+                    reg.setStatus(RegistrationConstants.STATUS_APPROVED);
+                    reg.setUpdatedAt(java.time.LocalDateTime.now());
+                    registrationRepository.save(reg);
+
+                    notificationService.send(
+                        reg.getUserId(),
+                        "爽约记录已撤销",
+                        "管理员已通过你的申诉，爽约记录已撤销、信誉分已恢复。报名状态已变回「已通过」，请等待研究者重新处理。",
+                        "APPEAL_PROCESSED",
+                        "registration",
+                        reg.getId()
+                    );
+                });
+            }
+        });
+    }
+
+    /**
+     * 撤销低评分：删除对应的评价记录，重新计算被评价人平均分。
+     */
+    private void reverseLowRating(Appeal appeal) {
+        reviewRepository.findById(appeal.getTargetId()).ifPresent(review -> {
+            reviewRepository.delete(review);
+            // 重新计算被评价人的平均评分
+            User reviewed = userRepository.findById(review.getReviewedId()).orElse(null);
+            if (reviewed != null) {
+                List<Review> allReviews = reviewRepository.findByReviewedIdOrderByCreatedAtDesc(reviewed.getId());
+                if (allReviews.isEmpty()) {
+                    reviewed.setResearcherRating(null);
+                    reviewed.setTotalReviews(0);
+                } else {
+                    double avg = allReviews.stream().mapToInt(Review::getRating).average().orElse(0);
+                    reviewed.setResearcherRating(new java.math.BigDecimal(avg)
+                        .setScale(2, java.math.RoundingMode.HALF_UP));
+                    reviewed.setTotalReviews(allReviews.size());
+                }
+                userRepository.save(reviewed);
+            }
+        });
+    }
+
+    /**
+     * 解决支付争议：将支付记录状态重置为 PENDING，清除确认信息。
+     */
+    private void resolvePaymentDispute(Appeal appeal) {
+        paymentRecordRepository.findById(appeal.getTargetId()).ifPresent(record -> {
+            record.setStatus("PENDING");
+            record.setPayerConfirmedAt(null);
+            record.setPayeeConfirmedAt(null);
+            paymentRecordRepository.save(record);
+        });
     }
 
     // ==================== 私有方法 ====================

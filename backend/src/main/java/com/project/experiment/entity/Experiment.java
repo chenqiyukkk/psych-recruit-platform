@@ -63,6 +63,9 @@ public class Experiment {
   @Column(nullable = false, length = 16)
   private String status;
 
+  @Column(columnDefinition = "text")
+  private String reviewComment;
+
   @Column(nullable = false)
   private Long organizerId;
 

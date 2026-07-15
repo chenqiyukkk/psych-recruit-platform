@@ -65,7 +65,12 @@ public class ReviewService {
         review.setIsAnonymous(Boolean.TRUE.equals(request.getIsAnonymous()));
         review.setCreatedAt(LocalDateTime.now());
 
-        return toResponse(reviewRepository.save(review));
+        Review saved = reviewRepository.save(review);
+
+        // 更新被评价人的评分（研究者评分 / 被试信誉分暂不通过评价变动）
+        recalculateReviewedUserStats(reviewedId);
+
+        return toResponse(saved);
 
     }
     public List<ReviewResponse> getMyReviews(String username){
@@ -161,6 +166,32 @@ public class ReviewService {
     private  Experiment getExperimentById(Long experimentId){
         return experimentRepository.findById(experimentId)
                 .orElseThrow(() -> new ApiException(404,"实验不存在"));
+    }
+
+    /**
+     * 评价创建/删除后，重新计算被评价人的统计指标。
+     * 目前仅更新研究者评分（researcherRating + totalReviews）。
+     */
+    private void recalculateReviewedUserStats(Long reviewedUserId) {
+        User reviewed = userRepository.findById(reviewedUserId).orElse(null);
+        if (reviewed == null) {
+            return;
+        }
+        // 只对研究者计算评分
+        if (!UserRoles.RESEARCHER.equals(reviewed.getRole())) {
+            return;
+        }
+        List<Review> allReviews = reviewRepository.findByReviewedIdOrderByCreatedAtDesc(reviewedUserId);
+        if (allReviews.isEmpty()) {
+            reviewed.setResearcherRating(null);
+            reviewed.setTotalReviews(0);
+        } else {
+            double avg = allReviews.stream().mapToInt(Review::getRating).average().orElse(0);
+            reviewed.setResearcherRating(new java.math.BigDecimal(avg)
+                .setScale(2, java.math.RoundingMode.HALF_UP));
+            reviewed.setTotalReviews(allReviews.size());
+        }
+        userRepository.save(reviewed);
     }
 
     private ReviewResponse toResponse(Review review){

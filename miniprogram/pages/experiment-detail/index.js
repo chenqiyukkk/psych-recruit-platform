@@ -18,10 +18,17 @@ Page({
 
   loadDetail(id) {
     this.setData({ loading: true, error: '', applied: false });
-    api
-      .getExperiment(id)
-      .then((experiment) => {
-        this.setData({ experiment: formatExperiment(experiment) });
+    Promise.all([
+      api.getExperiment(id),
+      api.getRegistrations().catch(() => []),
+    ])
+      .then(([experiment, registrations]) => {
+        const regs = Array.isArray(registrations) ? registrations : [];
+        const alreadyApplied = regs.some((r) => r.experimentId === Number(id));
+        this.setData({
+          experiment: formatExperiment(experiment),
+          applied: alreadyApplied,
+        });
       })
       .catch((error) => {
         this.setData({ error: error.message || '实验详情加载失败' });

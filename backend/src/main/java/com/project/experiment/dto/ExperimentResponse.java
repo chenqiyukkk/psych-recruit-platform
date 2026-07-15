@@ -14,6 +14,7 @@ public class ExperimentResponse {
   private String description;
   private String location;
   private Integer participantLimit;
+  private Long approvedCount;
   private LocalDateTime startTime;
   private LocalDateTime endTime;
   private String ethicsApprovalNo;
@@ -24,6 +25,7 @@ public class ExperimentResponse {
   private String screeningCriteria;
   private String excludeTags;
   private String status;
+  private String reviewComment;
   private Long organizerId;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;

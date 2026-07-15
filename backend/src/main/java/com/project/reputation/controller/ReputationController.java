@@ -30,6 +30,12 @@ public class ReputationController {
         return Result.success(reputationService.getMyReputation(authentication.getName()));
     }
 
+    @GetMapping("/my/logs")
+    @Operation(summary = "查询我的信誉分记录", description = "查询当前登录用户的信誉分变动日志")
+    public Result<List<ReputationLogResponse>> getMyLogs(Authentication authentication){
+        return Result.success(reputationService.getMyLogs(authentication.getName()));
+    }
+
     @GetMapping("/users/{userId}")
     @Operation(summary = "查询指定用户信誉分", description = "根据用户 ID 查询该用户当前信誉分信息")
     public Result<ReputationResponse> getUserReputation(@PathVariable("userId") Long userId){

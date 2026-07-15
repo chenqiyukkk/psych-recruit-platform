@@ -4,7 +4,8 @@
     "pages/experiment-detail/index",
     "pages/profile/index",
     "pages/notifications/index",
-    "pages/appeals/index"
+    "pages/appeals/index",
+    "pages/review/index"
   ],
   "window": {
     "navigationBarTitleText": "心试通",

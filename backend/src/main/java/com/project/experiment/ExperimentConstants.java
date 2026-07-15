@@ -15,6 +15,7 @@ public final class ExperimentConstants {
   public static final Set<String> PAYMENT_METHODS = Set.of(PAYMENT_OFFLINE, PAYMENT_ONLINE);
 
   public static final String STATUS_DRAFT = "DRAFT";
+  public static final String STATUS_PENDING_REVIEW = "PENDING_REVIEW";
   public static final String STATUS_PUBLISHED = "PUBLISHED";
   public static final String STATUS_RECRUITING = "RECRUITING";
   public static final String STATUS_FULL = "FULL";
@@ -23,6 +24,7 @@ public final class ExperimentConstants {
   public static final Set<String> STATUSES =
       Set.of(
           STATUS_DRAFT,
+          STATUS_PENDING_REVIEW,
           STATUS_PUBLISHED,
           STATUS_RECRUITING,
           STATUS_FULL,

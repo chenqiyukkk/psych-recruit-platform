@@ -44,7 +44,7 @@ function request(options) {
 
   const app = getApp();
   const token = app && app.getToken ? app.getToken() : wx.getStorageSync('psych_recruit_token');
-  const header = Object.assign({}, options.header || {});
+  const header = Object.assign({'Content-Type': 'application/json'}, options.header || {});
 
   if (options.auth !== false && token) {
     header.Authorization = `Bearer ${token}`;
@@ -125,6 +125,34 @@ const api = {
 
   createAppeal(data) {
     return request({ path: '/api/appeals', method: 'POST', data });
+  },
+
+  getReceivedReviews() {
+    return request({ path: '/api/reviews/received' });
+  },
+
+  getMyReviews() {
+    return request({ path: '/api/reviews/my' });
+  },
+
+  createReview(registrationId, data) {
+    return request({ path: `/api/reviews/registrations/${registrationId}`, method: 'POST', data });
+  },
+
+  getMyReputationLogs() {
+    return request({ path: '/api/reputations/my/logs' });
+  },
+
+  getMyPaymentRecords() {
+    return request({ path: '/api/payment/records/my' });
+  },
+
+  updateProfile(data) {
+    return request({ path: '/api/users/profile', method: 'PUT', data });
+  },
+
+  getPaymentRecord(registrationId) {
+    return request({ path: `/api/payment/records/${registrationId}` });
   },
 };
 

@@ -12,7 +12,8 @@
         </p>
       </div>
       <div class="inline-actions">
-        <el-button v-if="authStore.isAdmin" @click="router.push('/config')">进入系统配置</el-button>
+        <el-button v-if="authStore.isAdmin" @click="router.push('/admin/users')">用户管理</el-button>
+        <el-button v-if="authStore.isAdmin" @click="router.push('/config')">系统配置</el-button>
         <el-button type="primary" @click="router.push('/experiments/create')">创建新实验</el-button>
       </div>
     </div>
@@ -53,11 +54,24 @@
 
       <section
         v-if="authStore.isAdmin"
+        class="metric-card metric-card--blue"
+      >
+        <div class="metric-card__label">待审核实验</div>
+        <div class="metric-card__value">{{ pendingReviewCount }}</div>
+        <div class="metric-card__hint">
+          <el-button link type="primary" @click="router.push('/experiments')">前往实验管理审批</el-button>
+        </div>
+      </section>
+
+      <section
+        v-if="authStore.isAdmin"
         class="metric-card metric-card--purple"
       >
         <div class="metric-card__label">待处理申诉</div>
         <div class="metric-card__value">{{ pendingAppeals }}</div>
-        <div class="metric-card__hint">可前往申诉管理页继续处理争议与异常流程</div>
+        <div class="metric-card__hint">
+          <el-button link type="primary" @click="router.push('/appeals/manage')">进入申诉处理</el-button>
+        </div>
       </section>
     </div>
 
@@ -93,9 +107,11 @@
                   </div>
                   <div class="focus-card focus-card--secondary">
                     <div class="focus-card__label">治理重点</div>
-                    <div class="focus-card__title">待处理申诉 {{ pendingAppeals }} 条</div>
+                    <div class="focus-card__title">
+                      待审核实验 {{ pendingReviewCount }} 个 · 待处理申诉 {{ pendingAppeals }} 条
+                    </div>
                     <div class="focus-card__text">
-                      申诉、系统配置与平台级治理功能已集中在管理员视图中，便于你统一处理异常与争议流程。
+                      优先处理实验伦理审查，通过后研究者即可发布。申诉、系统配置与平台级治理功能已集中在管理员视图中。
                     </div>
                   </div>
                 </div>
@@ -140,6 +156,9 @@
             </div>
           </template>
           <el-timeline v-if="authStore.isAdmin">
+            <el-timeline-item timestamp="实验审核" type="danger">
+              待审核实验 {{ pendingReviewCount }} 个，通过后研究者方可发布
+            </el-timeline-item>
             <el-timeline-item timestamp="平台概况" type="primary">
               查看平台用户、实验、报名与评价等核心统计概况
             </el-timeline-item>
@@ -199,6 +218,7 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { getAppeals } from '../api/appeals';
 import { getPlatformSummary } from '../api/dashboard';
+import { getExperiments } from '../api/experiments';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -207,6 +227,7 @@ const summaryLoading = ref(false);
 const appealsLoading = ref(false);
 const summary = ref(null);
 const pendingAppeals = ref(0);
+const pendingReviewCount = ref(0);
 
 async function loadSummary() {
   if (!authStore.isAdmin) {
@@ -241,8 +262,21 @@ async function loadPendingAppeals() {
   }
 }
 
+async function loadPendingReview() {
+  if (!authStore.isAdmin) {
+    pendingReviewCount.value = 0;
+    return;
+  }
+  try {
+    const pageData = await getExperiments({ status: 'PENDING_REVIEW', page: 0, size: 1 });
+    pendingReviewCount.value = pageData.totalElements || 0;
+  } catch (_error) {
+    pendingReviewCount.value = 0;
+  }
+}
+
 async function refreshAdminOverview() {
-  await Promise.all([loadSummary(), loadPendingAppeals()]);
+  await Promise.all([loadSummary(), loadPendingAppeals(), loadPendingReview()]);
 }
 
 onMounted(() => {
@@ -263,6 +297,12 @@ onMounted(() => {
 
 .focus-card--secondary {
   background: #f0fdfa;
+}
+
+.metric-card--blue {
+  background: #fef3c7;
+  border: 1px solid rgba(217, 119, 6, 0.2);
+  color: #0f172a;
 }
 
 .focus-card__label {

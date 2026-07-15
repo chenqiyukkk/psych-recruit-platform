@@ -66,6 +66,29 @@ public class ExperimentController {
     return Result.success(experimentService.query(query, page, size, authentication.getName()));
   }
 
+  @PostMapping("/{id}/submit-review")
+  @PreAuthorize("hasAnyRole('研究者','管理员')")
+  public Result<Void> submitForReview(Authentication authentication, @PathVariable("id") Long id) {
+    experimentService.submitForReview(id, authentication.getName());
+    return Result.success(null);
+  }
+
+  @PostMapping("/{id}/approve")
+  @PreAuthorize("hasAnyRole('管理员')")
+  public Result<Void> approve(Authentication authentication, @PathVariable("id") Long id) {
+    experimentService.approve(id, authentication.getName());
+    return Result.success(null);
+  }
+
+  @PostMapping("/{id}/reject")
+  @PreAuthorize("hasAnyRole('管理员')")
+  public Result<Void> reject(Authentication authentication, @PathVariable("id") Long id,
+      @RequestBody(required = false) java.util.Map<String, String> body) {
+    String reason = body != null ? body.getOrDefault("reason", null) : null;
+    experimentService.reject(id, authentication.getName(), reason);
+    return Result.success(null);
+  }
+
   @PostMapping("/{id}/publish")
   @PreAuthorize("hasAnyRole('研究者','管理员')")
   public Result<Void> publish(Authentication authentication, @PathVariable("id") Long id) {

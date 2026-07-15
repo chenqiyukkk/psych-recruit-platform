@@ -39,7 +39,12 @@ const genderMap = {
 
 const experimentStatusMap = {
   DRAFT: { text: '草稿', className: 'muted' },
+  PENDING_REVIEW: { text: '待审核', className: 'warning' },
   PUBLISHED: { text: '招募中', className: 'success' },
+  RECRUITING: { text: '招募中', className: 'success' },
+  FULL: { text: '已满员', className: 'danger' },
+  ONGOING: { text: '进行中', className: 'info' },
+  COMPLETED: { text: '已完成', className: 'success' },
   CANCELLED: { text: '已取消', className: 'danger' },
   CLOSED: { text: '已结束', className: 'muted' },
 };
